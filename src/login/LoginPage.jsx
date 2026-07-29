@@ -17,19 +17,24 @@ import LockIcon from '@mui/icons-material/Lock';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
-// Theme import for Apex Lending
+import axios from 'axios';
+
 import { apexLendingTheme } from '../shared/themes/ApexLendingTheme';
-
-// Email validator for Apex Lending
 import { validateEmail } from '../shared/validators/email.validator';
+import { config } from '../shared/config/environment.config';
+import { getErrorType } from '../shared/http/error.handler';
+import { httpErrorTypes } from '../shared/http/error.types';
 
-const featuresOfPlatform = [
-  { icon: '⚡', title: 'Fast Approvals', desc: 'Get funded in less than a week' },
-  { icon: '🔒', title: 'Secure & Compliant', desc: 'Enterprise-grade security for your data' },
+
+const featuresOfPage = [
+  { icon: '⚡', title: 'Instant Approvals', desc: 'Get funded in minutes, not weeks' },
+  { icon: '🔒', title: 'Secure & Compliant', desc: 'Bank-grade security for your data' },
   { icon: '💰', title: 'Transparent Pricing', desc: 'No hidden fees or surprises' },
 ]
 
+
 export default function ApexLendingLogin() {
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -46,26 +51,66 @@ export default function ApexLendingLogin() {
     setLoading(true);
     setLoginAttempt(true);
 
-    // Validation
-    if (!email || !password) {
-      setError('Please enter both email and password');
+    // Validation - at least one of username or email is required
+    if (!username.trim() && !email.trim()) {
+      setError('Please enter either a username or email address');
       setLoading(false);
       return;
     }
 
-    // Invalid email?
-    if (validateEmail(email) === false) {
+    // If email is provided, validate its format
+    if (email.trim() && validateEmail(email) === false) {
       setError('Please enter a valid email address');
       setLoading(false);
       return;
     }
 
-    // Simulate API call
-    setTimeout(() => {
+    // Password validation
+    if (!password) {
+      setError('Please enter your password');
       setLoading(false);
-      // Placeholder for actual authentication
-      alert(`Login attempt for: ${email}\n\nThis is a demo. Connect to your authentication service.`);
-    }, 1500);
+      return;
+    }
+
+    // API call to IAM Service (TODO: Configure to Gateway)
+    const loginUrl = `${config.BACKEND_SERVICE_BASE_URL}${config.LOGIN_URI}`;
+    const requestBody = {
+      email: email,
+      password: password,
+      username: username
+    };
+
+    axios.post(loginUrl, requestBody)
+      .then((res) => {
+        const data = res.data;
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
+        const errorType = getErrorType(err);
+        if (errorType === httpErrorTypes.SERVICE_UNAVAILABLE) {
+          setError(
+            "Unable to connect to the backend service. Please try again."
+          );
+        } else if (errorType === httpErrorTypes.NOT_FOUND) {
+          setError(
+            "The user with the given username/email is not found. Try again."
+          )
+        } else if (errorType === httpErrorTypes.FORBIDDEN) {
+          setError(
+            "The password for the given username/email is incorrect. Please try again."
+          )
+        } else if (errorType === httpErrorTypes.RESOURCE_LOCKED) {
+          setError(
+            "The user is currently locked due to multiple login failures. Please try again after some time."
+          )
+        } else {
+          setError(
+            "Unexpected error from server during processing of request. Please try again."
+          )
+          console.error(err);
+        }
+      })
   };
 
   const handleClickShowPassword = () => {
@@ -159,7 +204,7 @@ export default function ApexLendingLogin() {
                   lineHeight: 1.3,
                 }}
               >
-                Your Trusted Home Loan Partner
+                Fast Home-Loans for your dream home!
               </Typography>
 
               <Typography
@@ -170,14 +215,13 @@ export default function ApexLendingLogin() {
                   maxWidth: '400px',
                 }}
               >
-                Access loans at an easy and fast paced approval rates. We believe you deserve 
-                faster and better processing for loans! 
+                Get competitive rates with early approvals and a perfect package for your home!
               </Typography>
             </Box>
 
             {/* Features */}
             <Box sx={{ position: 'relative', zIndex: 1 }}>
-              {featuresOfPlatform.map((feature, index) => (
+              {featuresOfPage.map((feature, index) => (
                 <Box
                   key={index}
                   sx={{
@@ -326,6 +370,61 @@ export default function ApexLendingLogin() {
 
               {/* Login Form */}
               <form onSubmit={handleLogin}>
+                {/* Username Field */}
+                <Box sx={{ marginBottom: '20px' }}>
+                  <Typography
+                    sx={{
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      marginBottom: '8px',
+                      color: '#1A2332',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    Username
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    type="text"
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Typography
+                            sx={{
+                              color: '#D4AF37',
+                              fontSize: '18px',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            @
+                          </Typography>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+
+                {/* OR Divider */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginBottom: '20px',
+                  }}
+                >
+                  <Box sx={{ flex: 1, height: '1px', backgroundColor: '#E0E4E8' }} />
+                  <Typography sx={{ fontSize: '0.75rem', color: '#8B92A1', fontWeight: 600 }}>
+                    OR
+                  </Typography>
+                  <Box sx={{ flex: 1, height: '1px', backgroundColor: '#E0E4E8' }} />
+                </Box>
+
+                {/* Email Field */}
                 <Box sx={{ marginBottom: '20px' }}>
                   <Typography
                     sx={{

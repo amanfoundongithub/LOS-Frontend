@@ -1,0 +1,5 @@
+export const config = {
+    BACKEND_SERVICE_BASE_URL: process.env.REACT_APP_BACKEND_SERVICE_BASE_URL,
+    LOGIN_URI: process.env.REACT_APP_LOGIN_URI,
+    REGISTER_URI: process.env.REACT_APP_REGISTER_URI,
+};
