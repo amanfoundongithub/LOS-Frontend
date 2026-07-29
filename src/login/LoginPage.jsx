@@ -40,7 +40,6 @@ export default function ApexLendingLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loginAttempt, setLoginAttempt] = useState(false);
 
   const themeInstance = useTheme();
   const isMobile = useMediaQuery(themeInstance.breakpoints.down('md'));
@@ -49,7 +48,6 @@ export default function ApexLendingLogin() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setLoginAttempt(true);
 
     // Validation - at least one of username or email is required
     if (!username.trim() && !email.trim()) {
@@ -83,6 +81,7 @@ export default function ApexLendingLogin() {
     axios.post(loginUrl, requestBody)
       .then((res) => {
         const data = res.data;
+        console.log(data);
         setLoading(false);
       })
       .catch((err) => {
@@ -590,7 +589,7 @@ export default function ApexLendingLogin() {
                   Don't have an account?{' '}
                   <Typography
                     component="a"
-                    href="#signup"
+                    href="/signup"
                     sx={{
                       color: '#0F4C75',
                       fontWeight: 600,
