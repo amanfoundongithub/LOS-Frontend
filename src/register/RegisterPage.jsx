@@ -13,27 +13,33 @@ import {
   FormControlLabel,
   Checkbox,
   LinearProgress,
+  MenuItem,
+  Select,
+  FormControl,
+  FormHelperText,
 } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
-import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
-import PhoneIcon from '@mui/icons-material/Phone';
+import BusinessIcon from '@mui/icons-material/Business';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
-// Theme import for Apex Lending
-import { apexLendingTheme } from '../shared/themes/ApexLendingTheme';
+import axios from 'axios';
 
+import { apexLendingTheme } from '../shared/themes/ApexLendingTheme';
+import { brandingConfig, featuresOfPage } from '../shared/config/apexLending-branding.config';
+
+// Password strength calculation
 const calculatePasswordStrength = (password) => {
   let strength = 0;
   if (password.length >= 8) strength++;
-  if (password.length >= 12) strength++;
+  if (password.length >= 16) strength++;
   if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
   if (/[0-9]/.test(password)) strength++;
-  if (/[^a-zA-Z0-9]/.test(password)) strength++;
+  if (/[@#$%^&+=!?.*()_\-]/.test(password)) strength++;
   return Math.min(strength, 4);
 };
 
@@ -53,15 +59,26 @@ const getPasswordStrengthLabel = (strength) => {
   return 'Strong';
 };
 
-export default function ApexLendingSignup() {
+// Validate username format
+const validateUsername = (username) => {
+  const pattern = /^[a-zA-Z0-9_.-]+$/;
+  return pattern.test(username);
+};
+
+// Validate password format (must have uppercase, lowercase, digit, special char)
+const validatePassword = (password) => {
+  const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&+=!?.*()_\-])[A-Za-z\d@#$%^&+=!?.*()_\-]{8,128}$/;
+  return pattern.test(password);
+};
+
+export default function ApexLendingRegister() {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
     email: '',
-    phone: '',
-    companyName: '',
+    username: '',
     password: '',
     confirmPassword: '',
+    role: '',
+    signingLimit: '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -70,49 +87,70 @@ export default function ApexLendingSignup() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [apiSuccess, setApiSuccess] = useState('');
 
   const themeInstance = useTheme();
   const isMobile = useMediaQuery(themeInstance.breakpoints.down('md'));
 
   const passwordStrength = calculatePasswordStrength(formData.password);
 
+  // User roles - matching backend enum
+  const userRoles = [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'LOAN_OFFICER', label: 'Loan Officer' },
+    { value: 'CUSTOMER', label: 'Customer' },
+    { value: 'MANAGER', label: 'Manager' },
+  ];
+
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
-    }
-
+    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Please provide a valid email address';
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
+    // Username validation
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (formData.username.length < 4 || formData.username.length > 20) {
+      newErrors.username = 'Username must be between 4 and 20 characters';
+    } else if (!validateUsername(formData.username)) {
+      newErrors.username = "Username may only contain letters, numbers, '_', '-' and '.'";
     }
 
-    if (!formData.companyName.trim()) {
-      newErrors.companyName = 'Company name is required';
-    }
-
+    // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+    } else if (formData.password.length < 8 || formData.password.length > 128) {
+      newErrors.password = 'Password must be between 8 and 128 characters';
+    } else if (!validatePassword(formData.password)) {
+      newErrors.password = 'Password must contain an uppercase letter, lowercase letter, digit and special character';
     }
 
+    // Confirm password validation
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
+    // Role validation
+    if (!formData.role) {
+      newErrors.role = 'Role is required';
+    }
+
+    // Signing limit validation (optional, but if provided must be >= 0)
+    if (formData.signingLimit && isNaN(parseFloat(formData.signingLimit))) {
+      newErrors.signingLimit = 'Signing limit must be a valid number';
+    } else if (formData.signingLimit && parseFloat(formData.signingLimit) < 0) {
+      newErrors.signingLimit = 'Signing limit cannot be negative';
+    }
+
+    // Terms validation
     if (!agreedToTerms) {
       newErrors.terms = 'You must agree to the terms and conditions';
     }
@@ -134,9 +172,13 @@ export default function ApexLendingSignup() {
         [name]: '',
       }));
     }
+    // Clear API errors when user makes changes
+    if (apiError) {
+      setApiError('');
+    }
   };
 
-  const handleSignup = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -144,19 +186,76 @@ export default function ApexLendingSignup() {
     }
 
     setLoading(true);
+    setApiError('');
+    setApiSuccess('');
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Prepare request payload
+      const payload = {
+        email: formData.email.trim(),
+        username: formData.username.trim(),
+        password: formData.password,
+        role: formData.role,
+        signingLimit: formData.signingLimit ? parseFloat(formData.signingLimit) : 0,
+      };
+
+      // Make API request
+      const response = await axios.post(
+        'http://localhost:4200/api/v1/auth/register',
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
       setLoading(false);
-      setSignupSuccess(true);
-    }, 1500);
+
+      // Handle success response
+      if (response.status === 201 || response.status === 200) {
+        setApiSuccess('Account created successfully! Redirecting to login...');
+        setSignupSuccess(true);
+
+        // Reset form
+        setTimeout(() => {
+          setFormData({
+            email: '',
+            username: '',
+            password: '',
+            confirmPassword: '',
+            role: '',
+            signingLimit: '',
+          });
+          setAgreedToTerms(false);
+          // Redirect to login after 2 seconds
+          window.location.href = '/login';
+        }, 2000);
+      }
+    } catch (error) {
+      setLoading(false);
+
+      // Handle error response
+      if (error.response) {
+        // Backend returned error response
+        const errorMessage = error.response.data?.message || 
+                            error.response.data?.error || 
+                            'Registration failed. Please try again.';
+        setApiError(errorMessage);
+      } else if (error.request) {
+        // Request made but no response
+        setApiError('No response from server. Please check your connection and try again.');
+      } else {
+        // Error in request setup
+        setApiError('Error: ' + error.message);
+      }
+    }
   };
 
   if (signupSuccess) {
     return (
       <ThemeProvider theme={apexLendingTheme}>
         <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#FFFFFF' }}>
-          {/* Left Panel - Brand Story */}
           {!isMobile && (
             <Box
               sx={{
@@ -172,14 +271,7 @@ export default function ApexLendingSignup() {
               }}
             >
               <Box sx={{ position: 'relative', zIndex: 1 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    marginBottom: '48px',
-                    gap: '12px',
-                  }}
-                >
+                <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '48px', gap: '12px' }}>
                   <Box
                     sx={{
                       width: '48px',
@@ -197,27 +289,20 @@ export default function ApexLendingSignup() {
                   >
                     A
                   </Box>
-                  <Typography
-                    sx={{
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      letterSpacing: '-0.5px',
-                    }}
-                  >
-                    Apex Lending
+                  <Typography sx={{ fontSize: '20px', fontWeight: 700, letterSpacing: '-0.5px' }}>
+                    {
+                      brandingConfig.TITLE
+                    }
                   </Typography>
                 </Box>
 
                 <Typography
                   variant="h3"
-                  sx={{
-                    marginBottom: '20px',
-                    fontSize: '2.2rem',
-                    fontWeight: 700,
-                    lineHeight: 1.3,
-                  }}
+                  sx={{ marginBottom: '20px', fontSize: '2.2rem', fontWeight: 700, lineHeight: 1.3 }}
                 >
-                  Fast-Track Your Growth
+                  {
+                    brandingConfig.SUBTITLE
+                  }
                 </Typography>
 
                 <Typography
@@ -228,14 +313,14 @@ export default function ApexLendingSignup() {
                     maxWidth: '400px',
                   }}
                 >
-                  Access competitive lending with transparent rates, instant approvals, and
-                  seamless onboarding. Your business deserves better financing solutions.
+                  {
+                    brandingConfig.DESCRIPTION
+                  }
                 </Typography>
               </Box>
             </Box>
           )}
 
-          {/* Success Message Panel */}
           <Box
             sx={{
               flex: isMobile ? 1 : 1,
@@ -252,28 +337,14 @@ export default function ApexLendingSignup() {
                   backgroundColor: '#FFFFFF',
                   padding: isMobile ? '32px 24px' : '48px',
                   borderRadius: '16px',
-                  boxShadow: isMobile
-                    ? '0 2px 8px rgba(0, 0, 0, 0.06)'
-                    : '0 8px 32px rgba(0, 0, 0, 0.08)',
+                  boxShadow: isMobile ? '0 2px 8px rgba(0, 0, 0, 0.06)' : '0 8px 32px rgba(0, 0, 0, 0.08)',
                   textAlign: 'center',
                 }}
               >
-                <CheckCircleIcon
-                  sx={{
-                    fontSize: '80px',
-                    color: '#10B981',
-                    marginBottom: '24px',
-                  }}
-                />
+                <CheckCircleIcon sx={{ fontSize: '80px', color: '#10B981', marginBottom: '24px' }} />
 
-                <Typography
-                  variant="h5"
-                  sx={{
-                    marginBottom: '12px',
-                    color: '#0F4C75',
-                  }}
-                >
-                  Account Created Successfully!
+                <Typography variant="h5" sx={{ marginBottom: '12px', color: '#0F4C75' }}>
+                  Registration Successful!
                 </Typography>
 
                 <Typography
@@ -284,58 +355,12 @@ export default function ApexLendingSignup() {
                     lineHeight: 1.6,
                   }}
                 >
-                  Welcome to Apex Lending, {formData.firstName}! Your account has been created and is ready to use.
-                  Check your email for confirmation and next steps.
+                  Welcome to Apex Lending! Your account has been created successfully. You will be redirected to the login
+                  page shortly.
                 </Typography>
 
-                <Box sx={{ marginBottom: '20px' }}>
-                  <Typography
-                    sx={{
-                      marginBottom: '16px',
-                      color: '#1A2332',
-                      fontWeight: 600,
-                      fontSize: '0.9rem',
-                    }}
-                  >
-                    What happens next?
-                  </Typography>
-                  {[
-                    'Verify your email address',
-                    'Complete your business profile',
-                    'Submit loan application',
-                    'Get instant approval',
-                  ].map((step, index) => (
-                    <Box
-                      key={index}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        marginBottom: '12px',
-                        fontSize: '0.9rem',
-                        color: '#8B92A1',
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          background: '#D4AF37',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#0F4C75',
-                          fontWeight: 600,
-                          fontSize: '0.8rem',
-                          minWidth: '24px',
-                        }}
-                      >
-                        {index + 1}
-                      </Box>
-                      {step}
-                    </Box>
-                  ))}
+                <Box sx={{ marginBottom: '32px' }}>
+                  <CircularProgress />
                 </Box>
 
                 <Button
@@ -343,10 +368,8 @@ export default function ApexLendingSignup() {
                   variant="contained"
                   size="large"
                   onClick={() => {
-                    // Navigate to login or dashboard
                     window.location.href = '/login';
                   }}
-                  sx={{ height: '48px', marginTop: '32px' }}
                 >
                   Go to Login
                 </Button>
@@ -361,7 +384,6 @@ export default function ApexLendingSignup() {
   return (
     <ThemeProvider theme={apexLendingTheme}>
       <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#FFFFFF' }}>
-        {/* Left Panel - Brand Story */}
         {!isMobile && (
           <Box
             sx={{
@@ -398,16 +420,8 @@ export default function ApexLendingSignup() {
               },
             }}
           >
-            {/* Brand Header */}
             <Box sx={{ position: 'relative', zIndex: 1 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginBottom: '48px',
-                  gap: '12px',
-                }}
-              >
+              <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '48px', gap: '12px' }}>
                 <Box
                   sx={{
                     width: '48px',
@@ -425,27 +439,20 @@ export default function ApexLendingSignup() {
                 >
                   A
                 </Box>
-                <Typography
-                  sx={{
-                    fontSize: '20px',
-                    fontWeight: 700,
-                    letterSpacing: '-0.5px',
-                  }}
-                >
-                  Apex Lending
+                <Typography sx={{ fontSize: '20px', fontWeight: 700, letterSpacing: '-0.5px' }}>
+                  {
+                    brandingConfig.TITLE
+                  }
                 </Typography>
               </Box>
 
               <Typography
                 variant="h3"
-                sx={{
-                  marginBottom: '20px',
-                  fontSize: '2.2rem',
-                  fontWeight: 700,
-                  lineHeight: 1.3,
-                }}
+                sx={{ marginBottom: '20px', fontSize: '2.2rem', fontWeight: 700, lineHeight: 1.3 }}
               >
-                Fast-Track Your Growth
+                {
+                  brandingConfig.SUBTITLE
+                }
               </Typography>
 
               <Typography
@@ -457,46 +464,21 @@ export default function ApexLendingSignup() {
                   marginBottom: '32px',
                 }}
               >
-                Access competitive lending with transparent rates, instant approvals, and
-                seamless onboarding. Your business deserves better financing solutions.
+                {
+                  brandingConfig.DESCRIPTION
+                }
               </Typography>
             </Box>
 
-            {/* Benefits */}
             <Box sx={{ position: 'relative', zIndex: 1 }}>
-              {[
-                { icon: '⚡', title: 'Instant Approvals', desc: 'Get funded in minutes, not weeks' },
-                { icon: '🔒', title: 'Secure & Compliant', desc: 'Bank-grade security for your data' },
-                { icon: '💰', title: 'Transparent Pricing', desc: 'No hidden fees or surprises' },
-              ].map((feature, index) => (
-                <Box
-                  key={index}
-                  sx={{
-                    display: 'flex',
-                    gap: '16px',
-                    marginBottom: index < 2 ? '24px' : 0,
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  <Box sx={{ fontSize: '24px', minWidth: '32px', textAlign: 'center' }}>
-                    {feature.icon}
-                  </Box>
+              {featuresOfPage.map((feature, index) => (
+                <Box key={index} sx={{ display: 'flex', gap: '16px', marginBottom: index < 2 ? '24px' : 0, alignItems: 'flex-start' }}>
+                  <Box sx={{ fontSize: '24px', minWidth: '32px', textAlign: 'center' }}>{feature.icon}</Box>
                   <Box>
-                    <Typography
-                      sx={{
-                        fontWeight: 600,
-                        marginBottom: '4px',
-                        fontSize: '0.95rem',
-                      }}
-                    >
+                    <Typography sx={{ fontWeight: 600, marginBottom: '4px', fontSize: '0.95rem' }}>
                       {feature.title}
                     </Typography>
-                    <Typography
-                      sx={{
-                        fontSize: '0.85rem',
-                        color: 'rgba(255, 255, 255, 0.75)',
-                      }}
-                    >
+                    <Typography sx={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.75)' }}>
                       {feature.desc}
                     </Typography>
                   </Box>
@@ -506,7 +488,6 @@ export default function ApexLendingSignup() {
           </Box>
         )}
 
-        {/* Right Panel - Signup Form */}
         <Box
           sx={{
             flex: isMobile ? 1 : 1,
@@ -520,18 +501,9 @@ export default function ApexLendingSignup() {
           }}
         >
           <Container maxWidth="sm">
-            {/* Mobile Brand */}
             {isMobile && (
               <Box sx={{ marginBottom: '32px', textAlign: 'center' }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '12px',
-                    marginBottom: '20px',
-                  }}
-                >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '20px' }}>
                   <Box
                     sx={{
                       width: '48px',
@@ -549,124 +521,50 @@ export default function ApexLendingSignup() {
                   >
                     A
                   </Box>
-                  <Typography
-                    sx={{
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      color: '#0F4C75',
-                    }}
-                  >
+                  <Typography sx={{ fontSize: '20px', fontWeight: 700, color: '#0F4C75' }}>
                     Apex Lending
                   </Typography>
                 </Box>
               </Box>
             )}
 
-            {/* Form Container */}
             <Box
               sx={{
                 backgroundColor: '#FFFFFF',
                 padding: isMobile ? '32px 24px' : '48px',
                 borderRadius: '16px',
-                boxShadow: isMobile
-                  ? '0 2px 8px rgba(0, 0, 0, 0.06)'
-                  : '0 8px 32px rgba(0, 0, 0, 0.08)',
+                boxShadow: isMobile ? '0 2px 8px rgba(0, 0, 0, 0.06)' : '0 8px 32px rgba(0, 0, 0, 0.08)',
                 marginBottom: isMobile ? '40px' : '0',
               }}
             >
-              <Typography
-                variant="h5"
-                sx={{
-                  marginBottom: '12px',
-                  color: '#0F4C75',
-                }}
-              >
+              <Typography variant="h5" sx={{ marginBottom: '12px', color: '#0F4C75' }}>
                 Create Your Account
               </Typography>
 
-              <Typography
-                sx={{
-                  marginBottom: '32px',
-                  color: '#8B92A1',
-                  fontSize: '0.9rem',
-                }}
-              >
-                Join thousands of businesses getting funded faster with Apex Lending
+              <Typography sx={{ marginBottom: '32px', color: '#8B92A1', fontSize: '0.9rem' }}>
+                Join Apex Lending and access fast, transparent lending solutions
               </Typography>
 
-              {/* General Error Alert */}
-              {Object.keys(errors).some((key) => key === 'form') && (
-                <Alert severity="error" sx={{ marginBottom: '24px', borderRadius: '8px' }}>
-                  {errors.form}
+              {/* API Error Alert */}
+              {apiError && (
+                <Alert
+                  severity="error"
+                  sx={{ marginBottom: '24px', borderRadius: '8px' }}
+                  onClose={() => setApiError('')}
+                >
+                  {apiError}
                 </Alert>
               )}
 
-              <form onSubmit={handleSignup}>
-                {/* First Name & Last Name */}
-                <Box sx={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography
-                      sx={{
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        marginBottom: '8px',
-                        color: '#1A2332',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      First Name
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      name="firstName"
-                      placeholder="John"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      error={!!errors.firstName}
-                      helperText={errors.firstName}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <PersonIcon sx={{ color: '#D4AF37', fontSize: '20px' }} />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography
-                      sx={{
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        marginBottom: '8px',
-                        color: '#1A2332',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      Last Name
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      name="lastName"
-                      placeholder="Doe"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      error={!!errors.lastName}
-                      helperText={errors.lastName}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <PersonIcon sx={{ color: '#D4AF37', fontSize: '20px' }} />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </Box>
-                </Box>
+              {/* API Success Alert */}
+              {apiSuccess && (
+                <Alert severity="success" sx={{ marginBottom: '24px', borderRadius: '8px' }}>
+                  {apiSuccess}
+                </Alert>
+              )}
 
-                {/* Email */}
+              <form onSubmit={handleRegister}>
+                {/* Email Field */}
                 <Box sx={{ marginBottom: '20px' }}>
                   <Typography
                     sx={{
@@ -678,7 +576,7 @@ export default function ApexLendingSignup() {
                       letterSpacing: '0.5px',
                     }}
                   >
-                    Email Address
+                    Email Address *
                   </Typography>
                   <TextField
                     fullWidth
@@ -699,7 +597,7 @@ export default function ApexLendingSignup() {
                   />
                 </Box>
 
-                {/* Phone */}
+                {/* Username Field */}
                 <Box sx={{ marginBottom: '20px' }}>
                   <Typography
                     sx={{
@@ -711,27 +609,27 @@ export default function ApexLendingSignup() {
                       letterSpacing: '0.5px',
                     }}
                   >
-                    Phone Number
+                    Username (4-20 chars) *
                   </Typography>
                   <TextField
                     fullWidth
-                    name="phone"
-                    placeholder="+1 (555) 000-0000"
-                    value={formData.phone}
+                    name="username"
+                    placeholder="john_doe"
+                    value={formData.username}
                     onChange={handleInputChange}
-                    error={!!errors.phone}
-                    helperText={errors.phone}
+                    error={!!errors.username}
+                    helperText={errors.username || "Letters, numbers, '_', '-', '.' only"}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <PhoneIcon sx={{ color: '#D4AF37', fontSize: '20px' }} />
+                          <PersonIcon sx={{ color: '#D4AF37', fontSize: '20px' }} />
                         </InputAdornment>
                       ),
                     }}
                   />
                 </Box>
 
-                {/* Company Name */}
+                {/* Role Dropdown */}
                 <Box sx={{ marginBottom: '20px' }}>
                   <Typography
                     sx={{
@@ -743,16 +641,61 @@ export default function ApexLendingSignup() {
                       letterSpacing: '0.5px',
                     }}
                   >
-                    Company Name
+                    Role *
+                  </Typography>
+                  <FormControl fullWidth error={!!errors.role}>
+                    <Select
+                      name="role"
+                      value={formData.role}
+                      onChange={handleInputChange}
+                      sx={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '8px',
+                        border: '1.5px solid #E0E4E8',
+                        '&:hover': {
+                          borderColor: '#D4AF37',
+                        },
+                        '&.Mui-focused': {
+                          borderColor: '#0F4C75',
+                        },
+                      }}
+                      displayEmpty
+                    >
+                      <MenuItem value="">-- Select a role --</MenuItem>
+                      {userRoles.map((roleOption) => (
+                        <MenuItem key={roleOption.value} value={roleOption.value}>
+                          {roleOption.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {errors.role && <FormHelperText>{errors.role}</FormHelperText>}
+                  </FormControl>
+                </Box>
+
+                {/* Signing Limit Field */}
+                <Box sx={{ marginBottom: '20px' }}>
+                  <Typography
+                    sx={{
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      marginBottom: '8px',
+                      color: '#1A2332',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    Signing Limit (Optional)
                   </Typography>
                   <TextField
                     fullWidth
-                    name="companyName"
-                    placeholder="Your Business Inc."
-                    value={formData.companyName}
+                    type="number"
+                    name="signingLimit"
+                    placeholder="0.00"
+                    value={formData.signingLimit}
                     onChange={handleInputChange}
-                    error={!!errors.companyName}
-                    helperText={errors.companyName}
+                    error={!!errors.signingLimit}
+                    helperText={errors.signingLimit || 'Must be a positive number'}
+                    inputProps={{ step: '0.01', min: '0' }}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -763,7 +706,7 @@ export default function ApexLendingSignup() {
                   />
                 </Box>
 
-                {/* Password */}
+                {/* Password Field */}
                 <Box sx={{ marginBottom: '20px' }}>
                   <Typography
                     sx={{
@@ -775,7 +718,7 @@ export default function ApexLendingSignup() {
                       letterSpacing: '0.5px',
                     }}
                   >
-                    Password
+                    Password (8-128 chars) *
                   </Typography>
                   <TextField
                     fullWidth
@@ -818,7 +761,7 @@ export default function ApexLendingSignup() {
                     }}
                   />
 
-                  {/* Password Strength Indicator */}
+                  {/* Password Requirements */}
                   {formData.password && (
                     <Box sx={{ marginTop: '12px' }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
@@ -845,8 +788,15 @@ export default function ApexLendingSignup() {
                             backgroundColor: getPasswordStrengthColor(passwordStrength),
                             borderRadius: '3px',
                           },
+                          marginBottom: '12px',
                         }}
                       />
+                      <Box sx={{ fontSize: '0.75rem', color: '#8B92A1', lineHeight: 1.6 }}>
+                        <div>✓ Uppercase letter: {/[A-Z]/.test(formData.password) ? '✓' : '✗'}</div>
+                        <div>✓ Lowercase letter: {/[a-z]/.test(formData.password) ? '✓' : '✗'}</div>
+                        <div>✓ Number: {/[0-9]/.test(formData.password) ? '✓' : '✗'}</div>
+                        <div>✓ Special character: {/[@#$%^&+=!?.*()_\-]/.test(formData.password) ? '✓' : '✗'}</div>
+                      </Box>
                     </Box>
                   )}
                 </Box>
@@ -863,7 +813,7 @@ export default function ApexLendingSignup() {
                       letterSpacing: '0.5px',
                     }}
                   >
-                    Confirm Password
+                    Confirm Password *
                   </Typography>
                   <TextField
                     fullWidth
@@ -959,7 +909,7 @@ export default function ApexLendingSignup() {
                   )}
                 </Box>
 
-                {/* Sign Up Button */}
+                {/* Register Button */}
                 <Button
                   fullWidth
                   variant="contained"
@@ -983,17 +933,11 @@ export default function ApexLendingSignup() {
                 </Button>
 
                 {/* Login Link */}
-                <Typography
-                  sx={{
-                    textAlign: 'center',
-                    fontSize: '0.9rem',
-                    color: '#8B92A1',
-                  }}
-                >
+                <Typography sx={{ textAlign: 'center', fontSize: '0.9rem', color: '#8B92A1' }}>
                   Already have an account?{' '}
                   <Typography
                     component="a"
-                    href="#login"
+                    href="/login"
                     sx={{
                       color: '#0F4C75',
                       fontWeight: 600,

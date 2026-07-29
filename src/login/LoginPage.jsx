@@ -24,13 +24,7 @@ import { validateEmail } from '../shared/validators/email.validator';
 import { config } from '../shared/config/environment.config';
 import { getErrorType } from '../shared/http/error.handler';
 import { httpErrorTypes } from '../shared/http/error.types';
-
-
-const featuresOfPage = [
-  { icon: '⚡', title: 'Instant Approvals', desc: 'Get funded in minutes, not weeks' },
-  { icon: '🔒', title: 'Secure & Compliant', desc: 'Bank-grade security for your data' },
-  { icon: '💰', title: 'Transparent Pricing', desc: 'No hidden fees or surprises' },
-]
+import { featuresOfPage, brandingConfig } from '../shared/config/apexLending-branding.config';
 
 
 export default function ApexLendingLogin() {
@@ -190,7 +184,9 @@ export default function ApexLendingLogin() {
                     letterSpacing: '-0.5px',
                   }}
                 >
-                  Apex Lending
+                  {
+                    brandingConfig.TITLE
+                  }
                 </Typography>
               </Box>
 
@@ -203,7 +199,9 @@ export default function ApexLendingLogin() {
                   lineHeight: 1.3,
                 }}
               >
-                Fast Home-Loans for your dream home!
+                {
+                  brandingConfig.SUBTITLE
+                }
               </Typography>
 
               <Typography
@@ -214,7 +212,9 @@ export default function ApexLendingLogin() {
                   maxWidth: '400px',
                 }}
               >
-                Get competitive rates with early approvals and a perfect package for your home!
+                {
+                  brandingConfig.DESCRIPTION
+                }
               </Typography>
             </Box>
 
