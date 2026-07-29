@@ -31,17 +31,9 @@ import axios from 'axios';
 
 import { apexLendingTheme } from '../shared/themes/ApexLendingTheme';
 import { brandingConfig, featuresOfPage } from '../shared/config/apexLending-branding.config';
-
-// Password strength calculation
-const calculatePasswordStrength = (password) => {
-  let strength = 0;
-  if (password.length >= 8) strength++;
-  if (password.length >= 16) strength++;
-  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-  if (/[0-9]/.test(password)) strength++;
-  if (/[@#$%^&+=!?.*()_\-]/.test(password)) strength++;
-  return Math.min(strength, 4);
-};
+import { validateUsername } from '../shared/validators/username.validator';
+import { validatePassword, calculatePasswordStrength } from '../shared/validators/password.validator';
+import { validateEmail } from '../shared/validators/email.validator';
 
 const getPasswordStrengthColor = (strength) => {
   if (strength === 0) return '#E0E4E8';
@@ -57,18 +49,6 @@ const getPasswordStrengthLabel = (strength) => {
   if (strength === 2) return 'Fair';
   if (strength === 3) return 'Good';
   return 'Strong';
-};
-
-// Validate username format
-const validateUsername = (username) => {
-  const pattern = /^[a-zA-Z0-9_.-]+$/;
-  return pattern.test(username);
-};
-
-// Validate password format (must have uppercase, lowercase, digit, special char)
-const validatePassword = (password) => {
-  const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&+=!?.*()_\-])[A-Za-z\d@#$%^&+=!?.*()_\-]{8,128}$/;
-  return pattern.test(password);
 };
 
 export default function ApexLendingRegister() {
@@ -109,7 +89,7 @@ export default function ApexLendingRegister() {
     // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (validateEmail(formData.email) === false) {
       newErrors.email = 'Please provide a valid email address';
     }
 
@@ -795,7 +775,7 @@ export default function ApexLendingRegister() {
                         <div>✓ Uppercase letter: {/[A-Z]/.test(formData.password) ? '✓' : '✗'}</div>
                         <div>✓ Lowercase letter: {/[a-z]/.test(formData.password) ? '✓' : '✗'}</div>
                         <div>✓ Number: {/[0-9]/.test(formData.password) ? '✓' : '✗'}</div>
-                        <div>✓ Special character: {/[@#$%^&+=!?.*()_\-]/.test(formData.password) ? '✓' : '✗'}</div>
+                        <div>✓ Special character: {/[@#$%^&+=!?.*()_-]/.test(formData.password) ? '✓' : '✗'}</div>
                       </Box>
                     </Box>
                   )}
