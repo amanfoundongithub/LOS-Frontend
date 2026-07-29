@@ -25,6 +25,7 @@ import { config } from '../shared/config/environment.config';
 import { getErrorType } from '../shared/http/error.handler';
 import { httpErrorTypes } from '../shared/http/error.types';
 import { featuresOfPage, brandingConfig } from '../shared/config/apexLending-branding.config';
+import { setAccessToken } from '../shared/authStore/access_token.storage';
 
 
 export default function ApexLendingLogin() {
@@ -72,10 +73,12 @@ export default function ApexLendingLogin() {
       username: username
     };
 
-    axios.post(loginUrl, requestBody)
+    axios.post(loginUrl, requestBody, {
+        withCredentials: true,
+    })
       .then((res) => {
         const data = res.data;
-        console.log(data);
+        setAccessToken(data.accessToken)
         setLoading(false);
       })
       .catch((err) => {
