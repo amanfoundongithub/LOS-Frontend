@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -34,6 +34,7 @@ import { brandingConfig, featuresOfPage } from '../shared/config/apexLending-bra
 import { validateUsername } from '../shared/validators/username.validator';
 import { validatePassword, calculatePasswordStrength } from '../shared/validators/password.validator';
 import { validateEmail } from '../shared/validators/email.validator';
+import { config } from '../shared/config/environment.config';
 
 const getPasswordStrengthColor = (strength) => {
   if (strength === 0) return '#E0E4E8';
@@ -69,19 +70,23 @@ export default function ApexLendingRegister() {
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [apiError, setApiError] = useState('');
   const [apiSuccess, setApiSuccess] = useState('');
+  const [userRole, setUserRole] = useState([])
+
+  useEffect(() => {
+    const url = `${config.BACKEND_SERVICE_BASE_URL}${config.ALL_USER_ROLES_URI}`;
+    axios.get(url)
+      .then((res) => {
+        setUserRole(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      })
+  }, [])
 
   const themeInstance = useTheme();
   const isMobile = useMediaQuery(themeInstance.breakpoints.down('md'));
 
   const passwordStrength = calculatePasswordStrength(formData.password);
-
-  // User roles - matching backend enum
-  const userRoles = [
-    { value: 'ADMIN', label: 'Admin' },
-    { value: 'LOAN_OFFICER', label: 'Loan Officer' },
-    { value: 'CUSTOMER', label: 'Customer' },
-    { value: 'MANAGER', label: 'Manager' },
-  ];
 
   const validateForm = () => {
     const newErrors = {};
@@ -181,7 +186,7 @@ export default function ApexLendingRegister() {
 
       // Make API request
       const response = await axios.post(
-        'http://localhost:4200/api/v1/auth/register',
+        `${config.BACKEND_SERVICE_BASE_URL}${config.REGISTER_URI}`,
         payload,
         {
           headers: {
@@ -642,9 +647,9 @@ export default function ApexLendingRegister() {
                       displayEmpty
                     >
                       <MenuItem value="">-- Select a role --</MenuItem>
-                      {userRoles.map((roleOption) => (
-                        <MenuItem key={roleOption.value} value={roleOption.value}>
-                          {roleOption.label}
+                      {userRole.map((roleOption) => (
+                        <MenuItem key={roleOption} value={roleOption}>
+                          {roleOption}
                         </MenuItem>
                       ))}
                     </Select>
