@@ -3,4 +3,6 @@ export const config = {
     LOGIN_URI: process.env.REACT_APP_LOGIN_URI,
     REGISTER_URI: process.env.REACT_APP_REGISTER_URI,
     ALL_USER_ROLES_URI: process.env.REACT_APP_ALL_USER_ROLES_URI,
+    USER_DETAILS_URI: process.env.REACT_APP_USER_DETAILS_URI,
+    REFRESH_TOKEN: process.env.REACT_APP_REFRESH_TOKEN,
 };

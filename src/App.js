@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ApexLendingLogin from './login/LoginPage'; 
 import ApexLendingSignup from './register/RegisterPage';
+import NotificationAdminDashboard from './dashboard/notification_admin/NotificationAdminDashboard';
 
 function App() {
   return (
@@ -8,6 +9,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<ApexLendingLogin />} />
         <Route path="/signup" element={<ApexLendingSignup />} />
+        <Route path="/notification/admin" element={<NotificationAdminDashboard />}/>
       </Routes>
     </BrowserRouter>
   );
