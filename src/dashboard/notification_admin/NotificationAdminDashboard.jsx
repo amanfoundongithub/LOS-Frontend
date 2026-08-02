@@ -272,13 +272,6 @@ const EmailLookupDialog = ({ open, onClose, onSearch, loading = false }) => {
   );
 };
 
-const listOfTabs = [
-  "Dashboard",
-  "Email Templates",
-  "Search"
-];
-
-
 
 export default function NotificationAdminDashboard() {
   const [tabValue, setTabValue] = useState(0);
@@ -488,7 +481,6 @@ export default function NotificationAdminDashboard() {
           }
 
           <NotificationAdminTabs 
-            listOfTabs = {listOfTabs}
             tabValue = {tabValue}
             setTabValue = {setTabValue}
           />

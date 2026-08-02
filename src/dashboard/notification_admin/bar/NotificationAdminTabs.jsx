@@ -4,8 +4,13 @@ import {
     Tab
 } from '@mui/material';
 
+const listOfTabs = [
+  "Dashboard",
+  "Email Templates",
+  "Search"
+];
+
 export const NotificationAdminTabs = ({
-    listOfTabs,
     tabValue,
     setTabValue
 }) => {
