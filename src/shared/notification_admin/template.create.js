@@ -26,8 +26,8 @@ const tryNotificationCreation = async (request) => {
         const accessToken = getAccessToken();
         const res = await axios.post(`${config.BACKEND_NOTIFICATION_SERVICE_BASE_URL}${config.NOTIFICATION_TEMPLATE_CREATE_URI}`,
             {
-                templateCode: request.code,
-                subjectLine: request.subject,
+                templateCode: request.templateCode,
+                subjectLine: request.subjectLine,
                 htmlContent: request.htmlContent
             },
             {

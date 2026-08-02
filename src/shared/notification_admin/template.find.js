@@ -5,31 +5,26 @@ import { getErrorType } from "../http/error.handler";
 import { httpErrorTypes } from "../http/error.types";
 import { getRefreshToken } from "../session/refresh-token.refresh";
 
-export const updateNotificationTemplate = async (request) => {
+export const findAllNotificationTemplate = async () => {
     try {
-        return await tryNotificationUpdation(request);
+        return await tryfindAllNotificationTemplate();
     } catch (err) {
         const errorType = getErrorType(err);
         if (errorType === httpErrorTypes.UNAUTHORIZED) {
             console.log("Refreshing...");
             const newAccessToken = await getRefreshToken();
             setAccessToken(newAccessToken);
-            return await tryNotificationUpdation();
+            return await tryfindAllNotificationTemplate();
         } else {
             return null;
         }
     }
 }
 
-const tryNotificationUpdation = async (request) => {
+const tryfindAllNotificationTemplate = async () => {
     try {
         const accessToken = getAccessToken();
-        const res = await axios.patch(`${config.BACKEND_NOTIFICATION_SERVICE_BASE_URL}${config.NOTIFICATION_TEMPLATE_CREATE_URI}`,
-            {
-                templateCode: request.templateCode,
-                subjectLine: request.subjectLine,
-                htmlContent: request.htmlContent
-            },
+        const res = await axios.get(`${config.BACKEND_NOTIFICATION_SERVICE_BASE_URL}${config.NOTIFICATION_TEMPLATE_FIND_ALL_URI}`,
             {
                 headers: {
                     Authorization: `Bearer ${accessToken}`
