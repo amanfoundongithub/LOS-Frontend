@@ -31,7 +31,7 @@ const listOfAuditFields = [
 export const AuditLogDialog = ({
     open,
     onClose,
-    logs = []
+    logs
 }) => {
 
     const formatTime = (timestamp) =>
