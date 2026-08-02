@@ -48,11 +48,11 @@ import { TemplateViewDialog } from './dialog/TemplateViewDialog';
 import { notificationAdminTheme } from '../../themes/notification_admin.theme';
 import { findAllNotificationTemplate } from '../../shared/notification_admin/template.find';
 import { useIsDeviceMobile } from '../../utils/device.util';
-import { TableOfTemplatesTab } from './table/TableOfTemplates';
+import { TableOfTemplatesTab } from './tabs/TableOfTemplatesTab';
 import { NotificationAdminBar } from './bar/NotificationAdminBar';
 import { NotificationAdminTabs } from './bar/NotificationAdminTabs';
 import { NotificationAdminProfile } from './profile/NotificationAdminProfile';
-import { NotificationAdminSearchTab } from './search/NotificationAdminSearch';
+import { NotificationAdminSearchTab } from './tabs/NotificationAdminSearchTab';
 import { AuditLogDialog } from './dialog/AuditLogDialog';
 
 // Statistic Card Component
