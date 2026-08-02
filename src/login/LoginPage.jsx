@@ -19,7 +19,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 import axios from 'axios';
 
-import { apexLendingTheme } from '../shared/themes/ApexLendingTheme';
+import { apexLendingTheme } from '../themes/ApexLendingTheme';
 import { validateEmail } from '../shared/validators/email.validator';
 import { config } from '../shared/config/environment.config';
 import { getErrorType } from '../shared/http/error.handler';

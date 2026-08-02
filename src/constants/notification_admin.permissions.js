@@ -1,0 +1,4 @@
+export const NOTIFICATION_TEMPLATE_READ_PERMISSION   = 'notificationTemplate:read'
+export const NOTIFICATION_TEMPLATE_CREATE_PERMISSION = 'notificationTemplate:create'
+export const NOTIFICATION_TEMPLATE_UPDATE_PERMISSION = 'notificationTemplate:update'
+export const NOTIFICATION_TEMPLATE_DELETE_PERMISSION = 'notificationTemplate:delete'

@@ -84,7 +84,6 @@ const PERMISSIONS = {
   NOTIFICATION_TEMPLATE_READ: 'notificationTemplate:read',
 };
 
-const getAuthToken = () => localStorage.getItem('access_token');
 
 // HTML Validation Function
 const isValidHtml = (html) => {

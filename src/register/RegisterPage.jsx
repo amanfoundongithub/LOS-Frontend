@@ -29,7 +29,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 import axios from 'axios';
 
-import { apexLendingTheme } from '../shared/themes/ApexLendingTheme';
+import { apexLendingTheme } from '../themes/ApexLendingTheme';
 import { brandingConfig, featuresOfPage } from '../shared/config/apexLending-branding.config';
 import { validateUsername } from '../shared/validators/username.validator';
 import { validatePassword, calculatePasswordStrength } from '../shared/validators/password.validator';
