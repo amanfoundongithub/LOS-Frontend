@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -26,7 +26,6 @@ import { getErrorType } from '../shared/http/error.handler';
 import { httpErrorTypes } from '../shared/http/error.types';
 import { featuresOfPage, brandingConfig } from '../shared/config/apexLending-branding.config';
 import { setAccessToken } from '../shared/authStore/access_token.storage';
-import { getUserProfile } from '../shared/session/profile.loader';
 
 
 export default function ApexLendingLogin() {
@@ -73,8 +72,6 @@ export default function ApexLendingLogin() {
       password: password,
       username: username
     };
-    getUserProfile();
-
 
     axios.post(loginUrl, requestBody, {
         withCredentials: true,

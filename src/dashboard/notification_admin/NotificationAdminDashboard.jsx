@@ -54,6 +54,10 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import SearchIcon from '@mui/icons-material/Search';
 import HistoryIcon from '@mui/icons-material/History';
 import { getUserProfile } from '../../shared/session/profile.loader';
+import { config } from '../../shared/config/environment.config';
+import { checkIfNotificationAdmin } from '../../shared/session/permission.checker';
+import { createNotificationTemplate } from '../../shared/notification_admin/template.create';
+import { updateNotificationTemplate } from '../../shared/notification_admin/template.update';
 
 const theme = createTheme({
   palette: {
@@ -499,8 +503,8 @@ const EmailLookupDialog = ({ open, onClose, onSearch, loading = false }) => {
             searchType === 'trackingId'
               ? 'Enter tracking ID (e.g., TRACK-123456)'
               : searchType === 'email'
-              ? 'Enter email address'
-              : 'Enter template code'
+                ? 'Enter email address'
+                : 'Enter template code'
           }
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
@@ -651,10 +655,6 @@ const AuditLogDialog = ({ open, onClose, logs = [] }) => {
 };
 
 export default function NotificationAdminDashboard() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [unauthorized, setUnauthorized] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [tabValue, setTabValue] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -682,75 +682,95 @@ export default function NotificationAdminDashboard() {
   const themeInstance = useTheme();
   const isMobile = useMediaQuery(themeInstance.breakpoints.down('md'));
 
+  /**
+   * Utility to fetch user data and sync with the current 
+   * process of loading the page. 
+   * 
+   * This fetches the user's data and syncs it in the profile metadata. 
+   */
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [unauthorized, setUnauthorized] = useState(false);
+  const fetchUserData = async () => {
+    try {
+        setLoading(true);
+        const userProfile = await getUserProfile();
+        setUser(userProfile);
+        setError('');
+        addAuditLog('Fetched User Data', `${config.USER_DETAILS_URI}`, 'Success');
+        setLoading(false);
+        setUnauthorized(!checkIfNotificationAdmin(userProfile));
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to fetch user data');
+      addAuditLog('Fetched User Data', `${config.USER_DETAILS_URI}`, 'Failure');
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     fetchUserData();
   }, []);
 
-  const fetchUserData = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const token = getAuthToken();
-
-      if (!token) {
-        setError('No authentication token found');
-        setTimeout(() => (window.location.href = '/login'), 2000);
-        return;
-      }
-
-      // Mock user data
-      const userData = {
-        id: 'user-123',
-        username: 'john_admin',
-        email: 'john@example.com',
-        status: 'ACTIVE',
-        attributes: {
-          role: 'NOTIFICATION_SERVICE_ADMIN',
-          permissions: [
-            'notificationTemplate:read',
-            'notificationTemplate:create',
-            'notificationTemplate:update',
-            'notificationTemplate:delete',
-          ],
-        },
-      };
-
-      setUser(userData);
-      addAuditLog('Fetch User Data', '/api/v1/users/me', 'success');
-      setLoading(false);
-    } catch (error) {
-      setError(error.response?.data?.message || 'Failed to fetch user data');
-      setLoading(false);
-    }
-  };
-
-  const checkPermission = (permission) => {
-    if (!user?.attributes) return false;
-    const permissions = user.attributes.permissions || [];
-    return permissions.includes(permission);
-  };
-
+  /**
+   * Utilities to audit the responses and requests.
+   * These utilities are required
+   */
   const addAuditLog = (action, endpoint, status) => {
     setAuditLogs((prev) => [{ timestamp: new Date(), action, endpoint, status }, ...prev.slice(0, 49)]);
   };
 
+  /**
+   * Template management helpers from the UI
+   * 1. CREATE -> Creates a new template for emails
+   * 2. UPDATE -> Updates an existing template for emails
+   * 3. DELETE -> Deletes an existing template for emails
+   */
   const handleCreateTemplate = (formData) => {
     if (templates.some((t) => t.code === formData.code)) {
-      setError('Template with this code already exists');
+      setError('Template with this code already exists. Please try another name.');
       return;
     }
-
-    setTemplates([...templates, formData]);
-    setTemplateDialogOpen(false);
-    addAuditLog('Create Template', '/api/v1/notifications/templates', 'success');
-    setError('');
+    createNotificationTemplate(formData)
+      .then((res) => {
+        if(res != null) {
+          setTemplates([...templates, res]);
+          setTemplateDialogOpen(false);
+          setError("");
+          addAuditLog("CREATE_TEMPLATE", "POST /api/v1/template", "SUCCESS");
+        } else {
+          setError("Error during creation of template");
+          addAuditLog("CREATE_TEMPLATE", "POST /api/v1/template", "FAILED");
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      })
   };
 
   const handleUpdateTemplate = (formData) => {
-    setTemplates(templates.map((t) => (t.code === editingTemplate.code ? formData : t)));
-    setTemplateDialogOpen(false);
-    setEditingTemplate(null);
-    addAuditLog('Update Template', `/api/v1/notifications/templates/${formData.code}`, 'success');
+    updateNotificationTemplate(formData)
+      .then((res) => {
+        if(res != null) {
+          setTemplates(templates.map((t) => (t.code === editingTemplate.code ? res : t)));
+          setTemplateDialogOpen(false);
+          setEditingTemplate(null);
+          addAuditLog('UPDATE_TEMPLATE', `PATCH /api/v1/template`, 'SUCCESS');
+        } else {
+          setError("Error during updation of template");
+          addAuditLog("UPDATE_TEMPLATE", "POST /api/v1/template", "FAILED");
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      })
+    
+  };
+
+
+  const checkPermission = (permission) => {
+    if (!user?.attributes) return false;
+    const permissions = user.attributes;
+    return Object.keys(permissions).includes(permission);
   };
 
   const handleDeleteTemplate = (code) => {
@@ -761,7 +781,6 @@ export default function NotificationAdminDashboard() {
   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
     window.location.href = '/login';
   };
 
