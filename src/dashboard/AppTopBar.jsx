@@ -1,36 +1,35 @@
-import { useState } from "react";
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Avatar from '@mui/material/Avatar';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Divider from '@mui/material/Divider';
+import { useState } from 'react';
+import { AppBar, Toolbar, Box, Typography, Avatar, Menu, MenuItem, Divider } from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { brandingConfig } from "../shared/config/apexLending-branding.config";
 
-export const NotificationAdminBar = ({
-    user,
-    setAuditDialogOpen,
-    handleLogout
+export const AppTopBar = ({
+    roleString,
+    user
 }) => {
     const [anchorEl, setAnchorEl] = useState(null);
     const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
     const handleMenuClose = () => setAnchorEl(null);
+    const handleLogout = () => {
+
+    }
+    const setAuditDialogOpen = (f) => {
+        
+    }
     return (
         <AppBar position="sticky">
             <Toolbar sx={{ justifyContent: 'space-between' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ width: 48, height: 48, borderRadius: '12px', background: 'linear-gradient(135deg, #D4AF37 0%, #E5C158 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '24px', color: '#0F4C75' }}>
-                        A
+                        {brandingConfig.TITLE[0]}
                     </Box>
                     <Box>
                         <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                            Apex Lending
+                            {brandingConfig.TITLE}
                         </Typography>
                         <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                            Notification Service Administrator
+                            {roleString}
                         </Typography>
                     </Box>
                 </Box>

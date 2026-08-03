@@ -7,3 +7,10 @@ export const checkIfNotificationAdmin = (userProfile) => {
     } 
     return false;
 }
+
+export const checkIfIAMAdmin = (userProfile) => {
+    if(userProfile.attributes?.[USER_ROLE_KEY] === "ADMIN"){
+        return true;
+    } 
+    return false;
+}

@@ -1,6 +1,6 @@
 import { createTheme } from "@mui/material";
 
-export const notificationAdminTheme = createTheme({
+export const adminTheme = createTheme({
   palette: {
     primary: { main: '#0F4C75', light: '#1A6B9D', dark: '#0A3557' },
     secondary: { main: '#D4AF37', light: '#E5C158', dark: '#A68625' },

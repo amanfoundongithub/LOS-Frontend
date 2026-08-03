@@ -4,9 +4,7 @@ import {
   Container,
   Typography,
   Card,
-  CircularProgress,
   Alert,
-  Button,
   Grid
 } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
@@ -18,17 +16,19 @@ import { config } from '../../shared/config/environment.config';
 import { checkIfNotificationAdmin } from '../../shared/session/permission.checker';
 
 
-import { notificationAdminTheme } from '../../themes/notification_admin.theme';
+import { adminTheme } from '../../themes/notification_admin.theme';
 import { findAllNotificationTemplate } from '../../shared/notification_admin/template.find';
 import { useIsDeviceMobile } from '../../utils/device.util';
 import { TableOfTemplatesTab } from './tabs/TableOfTemplatesTab';
-import { NotificationAdminBar } from './bar/NotificationAdminBar';
-import { NotificationAdminTabs } from './bar/NotificationAdminTabs';
 import { NotificationAdminProfile } from './profile/NotificationAdminProfile';
 import { NotificationAdminSearchTab } from './tabs/NotificationAdminSearchTab';
 import { AuditLogDialog } from './audit/AuditLogDialog';
 import { EmailLookupDialog } from './dialog/EmailLookupDialog';
 import { StatisticCard } from './statistics/StatisticsCard';
+import { UnauthorizedEntryPage } from '../../shared/UnauthorizedEntryPage';
+import { LoadingPage } from '../../shared/LoadingPage';
+import { AppTabs } from '../AppTabs';
+import { AppTopBar } from '../AppTopBar';
 
 
 export default function NotificationAdminDashboard() {
@@ -103,65 +103,35 @@ export default function NotificationAdminDashboard() {
   const addAuditLog = (action, endpoint, status) => {
     setAuditLogs((prev) => [{ timestamp: new Date(), action, endpoint, status }, ...prev.slice(0, 49)]);
   };
-
-  /**
-   * Template management helpers from the UI
-   * 1. CREATE -> Creates a new template for emails
-   * 2. UPDATE -> Updates an existing template for emails
-   * 3. DELETE -> Deletes an existing template for emails
-   */
   
-
-
   const checkPermission = (permission) => {
     if (!user?.attributes) return false;
     const permissions = user.attributes;
     return Object.keys(permissions).includes(permission);
   };
 
-  const handleLogout = () => {
-    window.location.href = '/login';
-  };
-
   if (loading) {
     return (
-      <ThemeProvider theme={notificationAdminTheme}>
-        <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB' }}>
-          <CircularProgress size={60} />
-        </Box>
-      </ThemeProvider>
+      <LoadingPage />
     );
   }
 
   if (unauthorized) {
     return (
-      <ThemeProvider theme={notificationAdminTheme}>
-        <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB' }}>
-          <Card sx={{ p: 4, textAlign: 'center', maxWidth: 500 }}>
-            <WarningIcon sx={{ fontSize: 80, color: '#F59E0B', mb: 2 }} />
-            <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
-              Access Denied
-            </Typography>
-            <Typography color="textSecondary" sx={{ mb: 3 }}>
-              This dashboard is only accessible to Notification Service Administrators.
-            </Typography>
-            <Button variant="contained" onClick={handleLogout}>
-              Logout
-            </Button>
-          </Card>
-        </Box>
-      </ThemeProvider>
+      <UnauthorizedEntryPage
+      title = {"Access Denied"}
+      message = "This page is available for only Notification Service Administrators"
+      />
     );
   }
 
   return (
-    <ThemeProvider theme={notificationAdminTheme}>
+    <ThemeProvider theme={adminTheme}>
       <Box sx={{ minHeight: '100vh', backgroundColor: '#F9FAFB' }}>
 
-        <NotificationAdminBar
+        <AppTopBar
+        roleString = "Notification Service Administrator"
         user = {user}
-        setAuditDialogOpen = {setAuditDialogOpen}
-        handleLogout = {handleLogout}
         />
 
         <Container maxWidth="lg" sx={{ pb: 4, pt: 4, px: isMobile ? 2 : 3 }}>
@@ -172,7 +142,12 @@ export default function NotificationAdminDashboard() {
           </Alert>
           }
 
-          <NotificationAdminTabs 
+          <AppTabs
+            listOfTabs={[
+              "Dashboard",
+              "Email Templates",
+              "Search"
+            ]} 
             tabValue = {tabValue}
             setTabValue = {setTabValue}
           />

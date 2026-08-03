@@ -4,13 +4,8 @@ import {
     Tab
 } from '@mui/material';
 
-const listOfTabs = [
-  "Dashboard",
-  "Email Templates",
-  "Search"
-];
-
-export const NotificationAdminTabs = ({
+export const AppTabs = ({
+    listOfTabs,
     tabValue,
     setTabValue
 }) => {
