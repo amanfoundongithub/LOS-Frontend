@@ -9,43 +9,24 @@ import {
   Alert,
   Button,
   Grid,
-  Avatar,
   MenuItem,
-  Divider,
-  Chip,
-  useMediaQuery,
-  useTheme,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  InputAdornment,
   FormControl,
   Select,
   LinearProgress,
 } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
-import PersonIcon from '@mui/icons-material/Person';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import SearchIcon from '@mui/icons-material/Search';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import GroupsIcon from '@mui/icons-material/Groups';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SecurityIcon from '@mui/icons-material/Security';
-import LockOpenIcon from '@mui/icons-material/LockOpen';
-import EmailIcon from '@mui/icons-material/Email';
-import PhoneIcon from '@mui/icons-material/Phone';
-import DateRangeIcon from '@mui/icons-material/DateRange';
 import { UnauthorizedEntryPage } from '../../shared/UnauthorizedEntryPage';
 import { LoadingPage } from '../../shared/LoadingPage';
 import { getUserProfile } from '../../shared/session/profile.loader';
@@ -53,6 +34,9 @@ import { checkIfIAMAdmin } from '../../shared/session/permission.checker';
 import { AppTopBar } from '../AppTopBar';
 import { adminTheme } from '../../themes/notification_admin.theme';
 import { AppTabs } from '../AppTabs';
+import { searchAllUsers } from './http/admin.search-users';
+import { AdminUserManagementComponent } from './components/AdminUserManagement';
+import { useIsDeviceMobile } from '../../utils/device.util';
 
 
 // Statistics Card Component
@@ -95,203 +79,7 @@ const StatCard = ({ title, value, icon: Icon, color, subtitle, trend }) => (
   </Card>
 );
 
-// User Details Dialog
-const UserDetailsDialog = ({ open, onClose, user = null, onBlock, onUnblock }) => {
-  const [blockReason, setBlockReason] = useState('');
-  const [unblockReason, setUnblockReason] = useState('');
-  const [actionDialogOpen, setActionDialogOpen] = useState(false);
-  const [actionType, setActionType] = useState(''); // 'block' or 'unblock'
 
-  const handleBlockClick = (type) => {
-    setActionType(type);
-    setActionDialogOpen(true);
-  };
-
-  const handleConfirmAction = () => {
-    if (actionType === 'block' && blockReason.trim()) {
-      onBlock(user.id, blockReason);
-      setBlockReason('');
-      setActionDialogOpen(false);
-      onClose();
-    } else if (actionType === 'unblock' && unblockReason.trim()) {
-      onUnblock(user.id, unblockReason);
-      setUnblockReason('');
-      setActionDialogOpen(false);
-      onClose();
-    }
-  };
-
-  return (
-    <>
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <PersonIcon /> User Details
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          {user && (
-            <Grid container spacing={2.5}>
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar
-                    sx={{
-                      width: 60,
-                      height: 60,
-                      background: 'linear-gradient(135deg, #D4AF37 0%, #E5C158 100%)',
-                      color: '#1A1A2E',
-                      fontWeight: 700,
-                      fontSize: '1.5rem',
-                    }}
-                  >
-                    {user.username?.charAt(0).toUpperCase()}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      {user.username}
-                    </Typography>
-                    <Chip
-                      label={user.status}
-                      color={user.status === 'ACTIVE' ? 'success' : 'error'}
-                      size="small"
-                      icon={user.status === 'ACTIVE' ? <CheckCircleIcon /> : <BlockIcon />}
-                    />
-                  </Box>
-                </Box>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    Email
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <EmailIcon sx={{ fontSize: 18, color: '#D4AF37' }} />
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>{user.email}</Typography>
-                  </Box>
-                </Box>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    Role
-                  </Typography>
-                  <Chip
-                    icon={<VerifiedUserIcon />}
-                    label={user.role}
-                    color="primary"
-                    variant="outlined"
-                    size="small"
-                  />
-                </Box>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    Phone
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <PhoneIcon sx={{ fontSize: 18, color: '#D4AF37' }} />
-                    <Typography sx={{ fontSize: '0.9rem' }}>{user.phone || 'Not provided'}</Typography>
-                  </Box>
-                </Box>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    Created Date
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <DateRangeIcon sx={{ fontSize: 18, color: '#D4AF37' }} />
-                    <Typography sx={{ fontSize: '0.9rem' }}>{new Date(user.createdAt).toLocaleDateString()}</Typography>
-                  </Box>
-                </Box>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Box>
-                  <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    User ID
-                  </Typography>
-                  <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', backgroundColor: '#F3F4F6', padding: '8px 12px', borderRadius: '6px', color: '#1A1A2E' }}>
-                    {user.id}
-                  </Typography>
-                </Box>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Divider />
-              </Grid>
-
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  {user.status === 'ACTIVE' ? (
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      color="error"
-                      startIcon={<BlockIcon />}
-                      onClick={() => handleBlockClick('block')}
-                    >
-                      Block User
-                    </Button>
-                  ) : (
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      color="success"
-                      startIcon={<LockOpenIcon />}
-                      onClick={() => handleBlockClick('unblock')}
-                    >
-                      Unblock User
-                    </Button>
-                  )}
-                </Box>
-              </Grid>
-            </Grid>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Block/Unblock Reason Dialog */}
-      <Dialog open={actionDialogOpen} onClose={() => setActionDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>
-          {actionType === 'block' ? '🚫 Block User' : '🔓 Unblock User'}
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label={`${actionType === 'block' ? 'Block' : 'Unblock'} Reason`}
-            placeholder={`Enter reason for ${actionType === 'block' ? 'blocking' : 'unblocking'} this user...`}
-            value={actionType === 'block' ? blockReason : unblockReason}
-            onChange={(e) =>
-              actionType === 'block' ? setBlockReason(e.target.value) : setUnblockReason(e.target.value)
-            }
-            variant="outlined"
-            sx={{ mt: 2 }}
-          />
-          <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>
-            ℹ️ Reason is required and will be logged in audit trail
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setActionDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            color={actionType === 'block' ? 'error' : 'success'}
-            onClick={handleConfirmAction}
-            disabled={actionType === 'block' ? !blockReason.trim() : !unblockReason.trim()}
-          >
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
-  );
-};
 
 // Add Admin User Dialog
 const AddAdminDialog = ({ open, onClose, onSave, loading = false }) => {
@@ -402,14 +190,7 @@ export default function IAMAdminDashboard() {
   const [tabValue, setTabValue] = useState(0);
 
   // Users Management State
-  const [users, setUsers] = useState([
-    { id: 'user-1', username: 'john_doe', email: 'john@example.com', status: 'ACTIVE', role: 'CUSTOMER', phone: '+1-234-567-8900', createdAt: '2024-01-10' },
-    { id: 'user-2', username: 'jane_smith', email: 'jane@example.com', status: 'ACTIVE', role: 'LOAN_OFFICER', phone: '+1-234-567-8901', createdAt: '2024-01-12' },
-    { id: 'user-3', username: 'blocked_user', email: 'blocked@example.com', status: 'BLOCKED', role: 'CUSTOMER', phone: null, createdAt: '2023-12-15' },
-  ]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [userDetailsOpen, setUserDetailsOpen] = useState(false);
+  const [users, setUsers] = useState([]);
 
   // Add Admin State
   const [addAdminOpen, setAddAdminOpen] = useState(false);
@@ -425,8 +206,7 @@ export default function IAMAdminDashboard() {
     failedLogins: 43,
   });
 
-  const themeInstance = useTheme();
-  const isMobile = useMediaQuery(themeInstance.breakpoints.down('md'));
+  const isMobile = useIsDeviceMobile();
 
   useEffect(() => {
     fetchData();
@@ -436,6 +216,8 @@ export default function IAMAdminDashboard() {
     try {
       setLoading(true);
       const userProfile = await getUserProfile();
+      const allUsers = await searchAllUsers();
+      setUsers(allUsers);
       setUser(userProfile);
       setUnauthorized(!checkIfIAMAdmin(userProfile));
       setLoading(false);
@@ -443,29 +225,6 @@ export default function IAMAdminDashboard() {
       setError(error.response?.data?.message || 'Failed to fetch data');
       setLoading(false);
     }
-  };
-
-  const handleUserClick = (selectedUser) => {
-    setSelectedUser(selectedUser);
-    setUserDetailsOpen(true);
-  };
-
-  const handleBlockUser = (userId, reason) => {
-    setUsers(
-      users.map((u) =>
-        u.id === userId ? { ...u, status: 'BLOCKED' } : u
-      )
-    );
-    alert(`User blocked with reason: ${reason}`);
-  };
-
-  const handleUnblockUser = (userId, reason) => {
-    setUsers(
-      users.map((u) =>
-        u.id === userId ? { ...u, status: 'ACTIVE' } : u
-      )
-    );
-    alert(`User unblocked with reason: ${reason}`);
   };
 
   const handleAddAdmin = (formData) => {
@@ -488,12 +247,6 @@ export default function IAMAdminDashboard() {
       alert(`Admin user ${formData.username} created successfully!`);
     }, 1500);
   };
-
-  const filteredUsers = users.filter(
-    (u) =>
-      u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   if (loading) {
     return (
@@ -665,102 +418,12 @@ export default function IAMAdminDashboard() {
             </>
           )}
 
-          {/* Tab 1: Manage Users */}
-          {tabValue === 1 && (
-            <>
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
-                  👥 User Management
-                </Typography>
-                <TextField
-                  fullWidth
-                  placeholder="Search by username or email..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ mb: 3 }}
-                />
-              </Box>
-
-              {filteredUsers.length === 0 ? (
-                <Card sx={{ p: 4, textAlign: 'center' }}>
-                  <PersonIcon sx={{ fontSize: 60, color: '#D4AF37', mb: 2 }} />
-                  <Typography color="textSecondary">No users found</Typography>
-                </Card>
-              ) : (
-                <TableContainer component={Paper} sx={{ borderRadius: '12px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)' }}>
-                  <Table>
-                    <TableHead>
-                      <TableRow sx={{ backgroundColor: '#F3F4F6' }}>
-                        <TableCell sx={{ fontWeight: 700 }}>Username</TableCell>
-                        <TableCell sx={{ fontWeight: 700, display: isMobile ? 'none' : 'table-cell' }}>Email</TableCell>
-                        <TableCell sx={{ fontWeight: 700, display: isMobile ? 'none' : 'table-cell' }}>Created Date</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                        <TableCell sx={{ fontWeight: 700, display: isMobile ? 'none' : 'table-cell' }} align="center">
-                          Action
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {filteredUsers.map((userItem) => (
-                        <TableRow key={userItem.id} sx={{ '&:hover': { backgroundColor: '#F9FAFB' } }}>
-                          <TableCell
-                            sx={{
-                              fontWeight: 700,
-                              color: '#1A1A2E',
-                              cursor: 'pointer',
-                              '&:hover': { color: '#D4AF37' },
-                            }}
-                            onClick={() => handleUserClick(userItem)}
-                          >
-                            {userItem.username}
-                          </TableCell>
-                          <TableCell sx={{ display: isMobile ? 'none' : 'table-cell', fontSize: '0.9rem', color: '#6B7280' }}>
-                            {userItem.email}
-                          </TableCell>
-                          <TableCell sx={{ display: isMobile ? 'none' : 'table-cell', fontSize: '0.9rem', color: '#6B7280' }}>
-                            {new Date(userItem.createdAt).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              icon={userItem.status === 'ACTIVE' ? <CheckCircleIcon /> : <BlockIcon />}
-                              label={userItem.status}
-                              color={userItem.status === 'ACTIVE' ? 'success' : 'error'}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell sx={{ display: isMobile ? 'none' : 'table-cell' }} align="center">
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              onClick={() => handleUserClick(userItem)}
-                              sx={{
-                                borderColor: '#D4AF37',
-                                color: '#D4AF37',
-                                '&:hover': {
-                                  borderColor: '#1A1A2E',
-                                  backgroundColor: '#1A1A2E',
-                                  color: '#D4AF37',
-                                },
-                              }}
-                            >
-                              View Details
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-            </>
-          )}
+          {tabValue === 1 && 
+            <AdminUserManagementComponent
+            users={users}
+            setUsers={setUsers}
+            />
+          }
 
           {/* Tab 2: Add Admin */}
           {tabValue === 2 && (
@@ -821,15 +484,6 @@ export default function IAMAdminDashboard() {
             </>
           )}
         </Container>
-
-        {/* Dialogs */}
-        <UserDetailsDialog
-          open={userDetailsOpen}
-          onClose={() => setUserDetailsOpen(false)}
-          user={selectedUser}
-          onBlock={handleBlockUser}
-          onUnblock={handleUnblockUser}
-        />
 
         <AddAdminDialog
           open={addAdminOpen}
