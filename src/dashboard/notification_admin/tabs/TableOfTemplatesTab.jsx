@@ -17,6 +17,11 @@ import {
     TablePagination,
     Chip,
     Tooltip,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
     alpha
 } from '@mui/material';
 import {
@@ -34,6 +39,7 @@ import MailIcon from '@mui/icons-material/Mail';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import { createNotificationTemplate } from '../../../shared/notification_admin/template.create';
 import { updateNotificationTemplate } from '../../../shared/notification_admin/template.update';
 import { deleteNotificationTemplate } from '../../../shared/notification_admin/template.delete';
@@ -55,6 +61,12 @@ export const TableOfTemplatesTab = ({
     const [templateToEdit, setTemplateToEdit] = useState(-1);
     const [templateToView, setTemplateToView] = useState(-1);
     const [editingTemplate, setEditingTemplate] = useState(null);
+
+    // Delete Confirmation State
+    const [deleteConfirmation, setDeleteConfirmation] = useState({
+        open: false,
+        templateCode: null,
+    });
 
     // Search and Pagination States
     const [searchQuery, setSearchQuery] = useState('');
@@ -134,7 +146,27 @@ export const TableOfTemplatesTab = ({
             });
     };
 
-    const handleDeleteTemplate = (templateCode) => {
+    // Open Delete Confirmation Dialog
+    const openDeleteConfirmation = (templateCode) => {
+        setDeleteConfirmation({
+            open: true,
+            templateCode,
+        });
+    };
+
+    // Close Delete Confirmation Dialog
+    const closeDeleteConfirmation = () => {
+        setDeleteConfirmation({
+            open: false,
+            templateCode: null,
+        });
+    };
+
+    // Confirm and Execute Deletion
+    const handleConfirmDelete = () => {
+        const { templateCode } = deleteConfirmation;
+        if (!templateCode) return;
+
         deleteNotificationTemplate(templateCode)
             .then(() => {
                 setTemplates(templates.filter((t) => t.templateCode !== templateCode));
@@ -144,6 +176,9 @@ export const TableOfTemplatesTab = ({
                 console.log(err);
                 addAuditLog('DELETE_TEMPLATE', `DELETE /api/v1/template?templateCode=${templateCode}`, 'FAILED');
             })
+            .finally(() => {
+                closeDeleteConfirmation();
+            });
     };
 
     const openCreateTemplateModal = () => {
@@ -398,7 +433,7 @@ export const TableOfTemplatesTab = ({
                                                         <Tooltip title="Delete Template">
                                                             <IconButton
                                                                 size="small"
-                                                                onClick={() => handleDeleteTemplate(template.templateCode)}
+                                                                onClick={() => openDeleteConfirmation(template.templateCode)}
                                                                 sx={{
                                                                     color: 'error.main',
                                                                     '&:hover': {
@@ -432,6 +467,83 @@ export const TableOfTemplatesTab = ({
                     />
                 </Paper>
             )}
+
+            {/* Delete Confirmation Popup */}
+            <Dialog
+                open={deleteConfirmation.open}
+                onClose={closeDeleteConfirmation}
+                PaperProps={{
+                    sx: {
+                        borderRadius: '16px',
+                        p: 1,
+                        maxWidth: 440,
+                    },
+                }}
+            >
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 40,
+                            height: 40,
+                            borderRadius: '50%',
+                            backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
+                            color: 'error.main',
+                        }}
+                    >
+                        <WarningAmberRoundedIcon />
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                        Delete Template
+                    </Typography>
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText color="text.secondary">
+                        Are you sure you want to delete the template{' '}
+                        <Box
+                            component="span"
+                            sx={{
+                                fontWeight: 700,
+                                color: 'text.primary',
+                                fontFamily: 'monospace',
+                            }}
+                        >
+                            "{deleteConfirmation.templateCode}"
+                        </Box>
+                        ? This action cannot be undone.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+                    <Button
+                        onClick={closeDeleteConfirmation}
+                        variant="outlined"
+                        color="inherit"
+                        sx={{
+                            borderRadius: '8px',
+                            textTransform: 'none',
+                            fontWeight: 600,
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleConfirmDelete}
+                        variant="contained"
+                        color="error"
+                        autoFocus
+                        sx={{
+                            borderRadius: '8px',
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            boxShadow: (theme) => `0 4px 12px ${alpha(theme.palette.error.main, 0.3)}`,
+                        }}
+                    >
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             {/* Dialog Components */}
             <TemplateCreateDialog
