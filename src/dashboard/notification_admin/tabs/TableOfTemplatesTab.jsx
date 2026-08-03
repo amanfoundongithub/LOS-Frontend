@@ -36,6 +36,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
 import { createNotificationTemplate } from '../../../shared/notification_admin/template.create';
 import { updateNotificationTemplate } from '../../../shared/notification_admin/template.update';
+import { deleteNotificationTemplate } from '../../../shared/notification_admin/template.delete';
 import { TemplateCreateDialog } from '../dialog/TemplateCreateDialog';
 import { TemplateUpdateDialog } from '../dialog/TemplateUpdateDialog';
 import { TemplateViewDialog } from '../dialog/TemplateViewDialog';
@@ -83,7 +84,7 @@ export const TableOfTemplatesTab = ({
 
     const handleSearchChange = (e) => {
         setSearchQuery(e.target.value);
-        setPage(0); // Reset to first page on search
+        setPage(0);
     };
 
     const handleClearSearch = () => {
@@ -110,6 +111,7 @@ export const TableOfTemplatesTab = ({
             })
             .catch((err) => {
                 console.log(err);
+                addAuditLog("CREATE_TEMPLATE", "POST /api/v1/template", "FAILED");
             });
     };
 
@@ -123,17 +125,25 @@ export const TableOfTemplatesTab = ({
                     setTemplateToEdit(-1);
                 } else {
                     setError("Error during updation of template");
-                    addAuditLog("UPDATE_TEMPLATE", "POST /api/v1/template", "FAILED");
+                    addAuditLog("UPDATE_TEMPLATE", "PATCH /api/v1/template", "FAILED");
                 }
             })
             .catch((err) => {
                 console.log(err);
+                addAuditLog("UPDATE_TEMPLATE", "PATCH /api/v1/template", "FAILED");
             });
     };
 
-    const handleDeleteTemplate = (code) => {
-        setTemplates(templates.filter((t) => t.code !== code));
-        addAuditLog('Delete Template', `/api/v1/notifications/templates/${code}`, 'success');
+    const handleDeleteTemplate = (templateCode) => {
+        deleteNotificationTemplate(templateCode)
+            .then(() => {
+                setTemplates(templates.filter((t) => t.templateCode !== templateCode));
+                addAuditLog('DELETE_TEMPLATE', `DELETE /api/v1/template?templateCode=${templateCode}`, 'SUCCESS');
+            })
+            .catch((err) => {
+                console.log(err);
+                addAuditLog('DELETE_TEMPLATE', `DELETE /api/v1/template?templateCode=${templateCode}`, 'FAILED');
+            })
     };
 
     const openCreateTemplateModal = () => {

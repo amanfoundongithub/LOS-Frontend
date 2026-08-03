@@ -14,7 +14,7 @@ export const updateNotificationTemplate = async (request) => {
             console.log("Refreshing...");
             const newAccessToken = await getRefreshToken();
             setAccessToken(newAccessToken);
-            return await tryNotificationUpdation();
+            return await tryNotificationUpdation(request);
         } else {
             return null;
         }
