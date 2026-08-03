@@ -4,7 +4,6 @@ import {
   Container,
   Typography,
   Card,
-  CardContent,
   CircularProgress,
   Alert,
   Button,
@@ -17,17 +16,8 @@ import WarningIcon from '@mui/icons-material/Warning';
 import { getUserProfile } from '../../shared/session/profile.loader';
 import { config } from '../../shared/config/environment.config';
 import { checkIfNotificationAdmin } from '../../shared/session/permission.checker';
-import { createNotificationTemplate } from '../../shared/notification_admin/template.create';
-import { updateNotificationTemplate } from '../../shared/notification_admin/template.update';
-import { TemplateCreateDialog } from './dialog/TemplateCreateDialog';
-import { TemplateUpdateDialog } from './dialog/TemplateUpdateDialog';
 
-import { 
-  NOTIFICATION_TEMPLATE_CREATE_PERMISSION,
-  NOTIFICATION_TEMPLATE_UPDATE_PERMISSION,
-} from '../../constants/notification_admin.permissions';
 
-import { TemplateViewDialog } from './dialog/TemplateViewDialog';
 import { notificationAdminTheme } from '../../themes/notification_admin.theme';
 import { findAllNotificationTemplate } from '../../shared/notification_admin/template.find';
 import { useIsDeviceMobile } from '../../utils/device.util';
@@ -38,33 +28,12 @@ import { NotificationAdminProfile } from './profile/NotificationAdminProfile';
 import { NotificationAdminSearchTab } from './tabs/NotificationAdminSearchTab';
 import { AuditLogDialog } from './audit/AuditLogDialog';
 import { EmailLookupDialog } from './dialog/EmailLookupDialog';
+import { StatisticCard } from './statistics/StatisticsCard';
 
-// Statistic Card Component
-const StatisticCard = ({ title, value, icon: Icon, color, subtitle }) => (
-  <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${color}15 0%, ${color}08 100%)` }}>
-    <CardContent>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <Box>
-          <Typography color="textSecondary" sx={{ fontSize: '0.85rem', fontWeight: 600, mb: 1 }}>
-            {title}
-          </Typography>
-          <Typography variant="h4" sx={{ color, fontWeight: 700, mb: 0.5 }}>
-            {value.toLocaleString()}
-          </Typography>
-          {subtitle && <Typography sx={{ fontSize: '0.8rem', color: 'textSecondary', mt: 1 }}>{subtitle}</Typography>}
-        </Box>
-        <Box sx={{ width: 60, height: 60, borderRadius: '12px', background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon sx={{ fontSize: 32, color }} />
-        </Box>
-      </Box>
-    </CardContent>
-  </Card>
-);
 
 export default function NotificationAdminDashboard() {
   const [tabValue, setTabValue] = useState(0);
 
-  const [editingTemplate, setEditingTemplate] = useState(null);
 
   // Email Lookup State
   const [emailLookupOpen, setEmailLookupOpen] = useState(false);
@@ -89,27 +58,6 @@ export default function NotificationAdminDashboard() {
   // Template listing states
   const [templates, setTemplates] = useState([]);
 
-  // Template controllers for modifying templates
-  const [templateCreate, setTemplateCreate] = useState(false);
-  const [templateToEdit, setTemplateToEdit] = useState(-1);
-  const [templateToView, setTemplateToView] = useState(-1);
-
-  // Template controller utility function
-  const openCreateTemplateModal = () => {
-    setEditingTemplate(null);
-    setTemplateCreate(true);
-  };
-  const openViewTemplateModal = (index) => {
-    setTemplateToView(index);
-  };
-  const openUpdateTemplateModal = (index) => {
-    setEditingTemplate(templates[index]);
-    setTemplateToEdit(index);
-  };
-  const handleDeletionOfTemplate = (templateCode) => {
-    handleDeleteTemplate(templateCode);
-    addAuditLog(`Delete Template: ${templateCode}`, `/api/v1/notifications/templates/${templateCode}`, 'success');
-  };
 
   /**
    * Utility to fetch user data and sync with the current 
@@ -162,57 +110,13 @@ export default function NotificationAdminDashboard() {
    * 2. UPDATE -> Updates an existing template for emails
    * 3. DELETE -> Deletes an existing template for emails
    */
-  const handleCreateTemplate = (formData) => {
-    if (templates.some((t) => t.templateCode === formData.templateCode)) {
-      setError('Template with this code already exists. Please try another name.');
-      return;
-    }
-    createNotificationTemplate(formData)
-      .then((res) => {
-        if (res != null) {
-          setTemplates([...templates, res]);
-          setError("");
-          addAuditLog("CREATE_TEMPLATE", "POST /api/v1/template", "SUCCESS");
-          setTemplateCreate(false);
-        } else {
-          setError("Error during creation of template");
-          addAuditLog("CREATE_TEMPLATE", "POST /api/v1/template", "FAILED");
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      })
-  };
-
-  const handleUpdateTemplate = (formData) => {
-    updateNotificationTemplate(formData)
-      .then((res) => {
-        if (res != null) {
-          setTemplates(templates.map((t) => (t.templateCode === editingTemplate.templateCode ? res : t)));
-          setEditingTemplate(null);
-          addAuditLog('UPDATE_TEMPLATE', `PATCH /api/v1/template`, 'SUCCESS');
-          setTemplateToEdit(-1);
-        } else {
-          setError("Error during updation of template");
-          addAuditLog("UPDATE_TEMPLATE", "POST /api/v1/template", "FAILED");
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      })
-
-  };
+  
 
 
   const checkPermission = (permission) => {
     if (!user?.attributes) return false;
     const permissions = user.attributes;
     return Object.keys(permissions).includes(permission);
-  };
-
-  const handleDeleteTemplate = (code) => {
-    setTemplates(templates.filter((t) => t.code !== code));
-    addAuditLog('Delete Template', `/api/v1/notifications/templates/${code}`, 'success');
   };
 
   const handleLogout = () => {
@@ -349,12 +253,11 @@ export default function NotificationAdminDashboard() {
 
           {tabValue === 1 && 
           <TableOfTemplatesTab
-          templatesList = {templates}
+          templates = {templates}
           checkPermission = {checkPermission}
-          openCreateTemplateModal = {openCreateTemplateModal}
-          openViewTemplateModal = {openViewTemplateModal}
-          openUpdateTemplateModal = {openUpdateTemplateModal}
-          handleDeleteTemplate = {handleDeletionOfTemplate}
+          setTemplates = {setTemplates}
+          setError = {setError}
+          addAuditLog = {addAuditLog}
           />
           }
 
@@ -365,33 +268,6 @@ export default function NotificationAdminDashboard() {
           }
 
         </Container>
-
-        {/* Dialogs */}
-        <TemplateCreateDialog
-          open={templateCreate}
-          onClose={() => {
-            setTemplateCreate(false);
-          }}
-          onSave={handleCreateTemplate}
-          canCreate={checkPermission(NOTIFICATION_TEMPLATE_CREATE_PERMISSION)}
-        />
-
-        <TemplateUpdateDialog
-          open={templateToEdit !== -1}
-          onClose={() => {
-            setTemplateToEdit(-1)
-          }}
-          onSave={handleUpdateTemplate}
-          canUpdate={checkPermission(NOTIFICATION_TEMPLATE_UPDATE_PERMISSION)}
-          template={templates[templateToEdit]}
-        />
-
-        <TemplateViewDialog
-          open={templateToView !== -1}
-          onClose={() =>
-            setTemplateToView(-1)
-          }
-          template={templates[templateToView]} />
 
         <EmailLookupDialog open={emailLookupOpen} onClose={() => setEmailLookupOpen(false)} />
 
