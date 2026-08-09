@@ -139,7 +139,7 @@ export const UserDetailsDialog = ({ open, onClose, user = null, onBlock, onUnblo
 
                             <Grid item xs={12}>
                                 <Box sx={{ display: 'flex', gap: 1 }}>
-                                    {user.status === 'ACTIVE' ? (
+                                    {user.status !== 'LOCKED' ? (
                                         <Button
                                             fullWidth
                                             variant="contained"
@@ -167,7 +167,6 @@ export const UserDetailsDialog = ({ open, onClose, user = null, onBlock, onUnblo
                 </DialogContent>
             </Dialog>
 
-            {/* Block/Unblock Reason Dialog */}
             <Dialog open={actionDialogOpen} onClose={() => setActionDialogOpen(false)} maxWidth="xs" fullWidth>
                 <DialogTitle sx={{ fontWeight: 700 }}>
                     {actionType === 'block' ? '🚫 Block User' : '🔓 Unblock User'}

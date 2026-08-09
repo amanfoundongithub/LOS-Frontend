@@ -6,41 +6,62 @@ import BlockIcon from '@mui/icons-material/Block';
 import { useIsDeviceMobile } from '../../../utils/device.util';
 import { useState } from 'react';
 import { UserDetailsDialog } from './UserDetailsDialog';
+import { blockUser } from '../http/admin.block-user';
 
 export const AdminUserManagementComponent = ({
     users,
     setUsers
 }) => {
-    const isMobile = useIsDeviceMobile();
+
+    // Controller variables
+    const [userDetailsOpen, setUserDetailsOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
+
+    // Mobile responsiveness?
+    const isMobile = useIsDeviceMobile();
     const filteredUsers = users.filter(
         (u) =>
             u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
             u.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    const [userDetailsOpen, setUserDetailsOpen] = useState(false);
-    const [selectedUser, setSelectedUser] = useState(null);
-    const handleUserClick = (selectedUser) => {
-    setSelectedUser(selectedUser);
-    setUserDetailsOpen(true);
-  };
-  const handleBlockUser = (userId, reason) => {
-    setUsers(
-      users.map((u) =>
-        u.id === userId ? { ...u, status: 'BLOCKED' } : u
-      )
-    );
-    alert(`User blocked with reason: ${reason}`);
-  };
 
-  const handleUnblockUser = (userId, reason) => {
-    setUsers(
-      users.map((u) =>
-        u.id === userId ? { ...u, status: 'ACTIVE' } : u
-      )
-    );
-    alert(`User unblocked with reason: ${reason}`);
-  };
+    // Helper functions
+    const handleUserClick = (selectedUser) => {
+        setSelectedUser(selectedUser);
+        setUserDetailsOpen(true);
+    };
+
+    // Block user?
+    const handleBlockUser = (userId, reason) => {
+        blockUser({
+            reason: reason,
+            userId: userId
+        })
+        .then((res) => {
+            console.log(res);
+            setUsers(
+            users.map((u) =>
+                u.id === userId ? { ...u, status: 'BLOCKED' } : u
+            )
+        );
+                alert(`User blocked with reason: ${reason}`);
+
+        })
+        .catch((err) => {
+            console.log(err);
+        })
+        
+    };
+
+    const handleUnblockUser = (userId, reason) => {
+        setUsers(
+            users.map((u) =>
+                u.id === userId ? { ...u, status: 'ACTIVE' } : u
+            )
+        );
+        alert(`User unblocked with reason: ${reason}`);
+    };
     return (
         <>
             <Box sx={{ mb: 3 }}>
@@ -105,15 +126,15 @@ export const AdminUserManagementComponent = ({
                                         {new Date(userItem.createdDate).toLocaleDateString()}
                                     </TableCell>
                                     <TableCell sx={{ display: isMobile ? 'none' : 'table-cell', fontSize: '0.9rem', color: '#6B7280' }}>
-                                        {userItem.lastLoginDate != null? new Date(userItem.lastLoginDate).toLocaleDateString(): "---"}
+                                        {userItem.lastLoginDate != null ? new Date(userItem.lastLoginDate).toLocaleDateString() : "---"}
                                     </TableCell>
                                     <TableCell>
                                         <Chip
-                                        sx = {{
-                                            fontFamily : 'monospace'
-                                        }}
-                                        label={userItem.attributes.userRole}
-                                        size="small"
+                                            sx={{
+                                                fontFamily: 'monospace'
+                                            }}
+                                            label={userItem.attributes.userRole}
+                                            size="small"
                                         />
                                     </TableCell>
                                     <TableCell>
@@ -149,12 +170,12 @@ export const AdminUserManagementComponent = ({
                 </TableContainer>
             )}
             <UserDetailsDialog
-                      open={userDetailsOpen}
-                      onClose={() => setUserDetailsOpen(false)}
-                      user={selectedUser}
-                      onBlock={handleBlockUser}
-                      onUnblock={handleUnblockUser}
-                    />
+                open={userDetailsOpen}
+                onClose={() => setUserDetailsOpen(false)}
+                user={selectedUser}
+                onBlock={handleBlockUser}
+                onUnblock={handleUnblockUser}
+            />
         </>
     )
 }
