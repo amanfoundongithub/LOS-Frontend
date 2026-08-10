@@ -3,7 +3,6 @@ import PersonIcon from '@mui/icons-material/Person';
 import { useIsDeviceMobile } from '../../../utils/device.util';
 import { useState, useEffect } from 'react';
 import { UserDetailsDialog } from './UserDetailsDialog';
-import { blockUser } from '../http/admin.block-user';
 import UserStatusChip from '../../../components/UserStatusChip';
 import { searchAllUsers } from '../http/admin.search-users';
 import { getAllUserRoles } from '../http/user.all-roles';
@@ -103,21 +102,6 @@ export const AdminUserManagementComponent = () => {
             });
     },
     [debouncedSearchQuery, sortBy, sortDir, selectedRole, selectedStatus, page, rowsPerPage]);
-
-
-    const handleBlockUser = (userId, reason) => {
-        blockUser({ reason, userId })
-            .then(() => {
-                setUsers(users.map((u) => u.id === userId ? { ...u, status: 'BLOCKED' } : u));
-                alert(`User blocked with reason: ${reason}`);
-            })
-            .catch((err) => console.error(err));
-    };
-
-    const handleUnblockUser = (userId, reason) => {
-        setUsers(users.map((u) => u.id === userId ? { ...u, status: 'ACTIVE' } : u));
-        alert(`User unblocked with reason: ${reason}`);
-    };
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -257,10 +241,10 @@ export const AdminUserManagementComponent = () => {
 
             <UserDetailsDialog
                 open={userDetailsOpen}
-                onClose={() => setUserDetailsOpen(false)}
+                setOpen={setUserDetailsOpen}
                 user={selectedUser}
-                onBlock={handleBlockUser}
-                onUnblock={handleUnblockUser}
+                users = {users}
+                setUsers={setUsers}
             />
         </>
     );
