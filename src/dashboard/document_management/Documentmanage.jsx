@@ -31,13 +31,6 @@ import {
   Select,
   Stack,
   Divider,
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
-  TimelineOppositeContent,
   Tab,
   Tabs,
   Alert,
@@ -46,6 +39,15 @@ import {
   Step,
   StepLabel,
 } from '@mui/material';
+import { 
+  Timeline, 
+  TimelineItem, 
+  TimelineSeparator, 
+  TimelineConnector, 
+  TimelineContent, 
+  TimelineDot ,
+  TimelineOppositeContent
+} from '@mui/lab';
 import {
   Search as SearchIcon,
   Menu as MenuIcon,
@@ -53,12 +55,12 @@ import {
   Download as DownloadIcon,
   Visibility as ViewIcon,
   MoreVert as MoreIcon,
-  CheckCircle as VerifiedIcon,
+  CheckCircleOutlined as VerifiedIcon,
   Warning as PendingIcon,
   Error as RejectedIcon,
-  HelpOutline as MissingIcon,
+  HelpOutlined as MissingIcon,
   CloudUpload as UploadIcon,
-  Timeline as TimelineIcon,
+  TimelineOutlined as TimelineIcon,
   Assignment as DocumentIcon,
   Dashboard as DashboardIcon,
   FilePresent as FileIcon,
@@ -68,6 +70,7 @@ import {
   Refresh as RefreshIcon,
   ThumbUp as ApproveIcon,
   ThumbDown as RejectSmallIcon,
+  CheckCircleOutlined,
 } from '@mui/icons-material';
 
 // ============================================================================
@@ -1320,7 +1323,7 @@ const VerificationQueuePage = ({ documents }) => {
 
       {queueDocuments.length === 0 ? (
         <Paper sx={{ p: 4, textAlign: 'center' }}>
-          <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
+          <CheckCircleOutlined sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
           <Typography color="textSecondary" sx={{ mb: 1 }}>
             No documents pending verification
           </Typography>

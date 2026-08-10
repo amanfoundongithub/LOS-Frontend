@@ -25,7 +25,7 @@ import { NotificationAdminSearchTab } from './tabs/NotificationAdminSearchTab';
 import { AuditLogDialog } from './audit/AuditLogDialog';
 import { EmailLookupDialog } from './dialog/EmailLookupDialog';
 import { StatisticCard } from './statistics/StatisticsCard';
-import { UnauthorizedEntryPage } from '../../shared/UnauthorizedEntryPage';
+import { UnauthorizedEntryPage } from '../../fallback/403UnauthorizedEntryPage';
 import { LoadingPage } from '../../shared/LoadingPage';
 import { AppTabs } from '../AppTabs';
 import { AppTopBar } from '../AppTopBar';

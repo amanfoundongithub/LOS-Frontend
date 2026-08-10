@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Container, Alert } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
-import { UnauthorizedEntryPage } from '../../shared/UnauthorizedEntryPage';
+import { UnauthorizedEntryPage } from '../../fallback/403UnauthorizedEntryPage';
 import { LoadingPage } from '../../shared/LoadingPage';
 import { getUserProfile } from '../../shared/session/profile.loader';
 import { checkIfIAMAdmin } from '../../shared/session/permission.checker';
@@ -14,11 +14,15 @@ import { useIsDeviceMobile } from '../../utils/device.util';
 import { getUserSummary } from './http/admin.user-summary';
 import { AdminStatistics } from './AdminStatisticsTab';
 import AddNewAdminTab from './addNew/AddNewAdminTab';
+import { getErrorType } from '../../shared/http/error.handler';
+import { httpErrorTypes } from '../../shared/http/error.types';
+import ServiceUnavailablePage from '../../fallback/503ServiceUnavailable';
 
 // Main Component
 export default function IAMAdminDashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const [error, setError] = useState('');
   const [unauthorized, setUnauthorized] = useState(false);
   const [tabValue, setTabValue] = useState(0);
@@ -48,6 +52,10 @@ export default function IAMAdminDashboard() {
       setLoading(false);
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to fetch data');
+      const errorType = getErrorType(error);
+      if(errorType === httpErrorTypes.SERVICE_UNAVAILABLE) {
+        setServiceUnavailable(true);
+      }
       setLoading(false);
     }
   };
@@ -57,6 +65,13 @@ export default function IAMAdminDashboard() {
       <LoadingPage 
       />
     );
+  }
+
+  if(serviceUnavailable) {
+    return (
+      <ServiceUnavailablePage 
+      />
+    )
   }
 
   if (unauthorized) {
