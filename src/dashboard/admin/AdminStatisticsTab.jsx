@@ -39,7 +39,7 @@ export const AdminStatistics = ({
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
                     <ColoredStatCard
-                        title="Blocked Users"
+                        title="Locked Users"
                         value={stats.lockedUsers}
                         icon={BlockIcon}
                         color="#EF4444"
@@ -52,13 +52,13 @@ export const AdminStatistics = ({
                         value={stats.adminUsers}
                         icon={VerifiedUserIcon}
                         color="#D4AF37"
-                        subtitle="All admin(s)"
+                        subtitle="All service admin(s)"
                     />
                 </Grid>
             </Grid>
 
             <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                {/* <Grid item xs={12} md={6}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" sx={{ mb: 3, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -88,9 +88,9 @@ export const AdminStatistics = ({
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Grid> */}
 
-                <Grid item xs={12} md={6}>
+                {/* <Grid item xs={12} md={6}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" sx={{ mb: 3, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -133,7 +133,7 @@ export const AdminStatistics = ({
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Grid> */}
             </Grid>
         </>
     )

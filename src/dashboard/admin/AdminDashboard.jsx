@@ -245,10 +245,7 @@ export default function IAMAdminDashboard() {
           }
 
           {tabValue === 1 && 
-            <AdminUserManagementComponent
-            users={users}
-            setUsers={setUsers}
-            />
+            <AdminUserManagementComponent />
           }
 
           {tabValue === 2 && (
