@@ -18,9 +18,7 @@ const SelectDropDown = ({
                 labelId={`${label}-filter`}
                 value={selectedItemValue}
                 label="Status"
-                onChange={() => {
-                    selectionHandler(selectedItemValue)
-                }}
+                onChange={selectionHandler}
             >
                 {isAllNeeded === false ?
                     <></>
