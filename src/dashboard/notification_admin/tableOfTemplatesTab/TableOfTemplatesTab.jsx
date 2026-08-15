@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -22,6 +22,7 @@ import {
     DialogContent,
     DialogContentText,
     DialogActions,
+    Stack,
     alpha
 } from '@mui/material';
 import {
@@ -31,7 +32,6 @@ import {
     NOTIFICATION_TEMPLATE_DELETE_PERMISSION
 } from '../../../constants/notification_admin.permissions';
 import { useIsDeviceMobile } from '../../../utils/device.util';
-import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -39,6 +39,8 @@ import MailIcon from '@mui/icons-material/Mail';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
+import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import { createNotificationTemplate } from '../../../shared/notification_admin/template.create';
 import { updateNotificationTemplate } from '../../../shared/notification_admin/template.update';
@@ -46,34 +48,37 @@ import { deleteNotificationTemplate } from '../../../shared/notification_admin/t
 import { TemplateCreateDialog } from '../dialog/TemplateCreateDialog';
 import { TemplateUpdateDialog } from '../dialog/TemplateUpdateDialog';
 import { TemplateViewDialog } from '../dialog/TemplateViewDialog';
+import { findAllNotificationTemplate } from '../../../shared/notification_admin/template.find';
 
 export const TableOfTemplatesTab = ({
-    templates,
-    setTemplates,
+    user,
     setError,
-    addAuditLog,
-    checkPermission
+    addAuditLog
 }) => {
     const isMobile = useIsDeviceMobile();
-    
-    // Modal & State Management
-    const [templateCreate, setTemplateCreate] = useState(false);
-    const [templateToEdit, setTemplateToEdit] = useState(-1);
-    const [templateToView, setTemplateToView] = useState(-1);
-    const [editingTemplate, setEditingTemplate] = useState(null);
 
-    // Delete Confirmation State
-    const [deleteConfirmation, setDeleteConfirmation] = useState({
-        open: false,
-        templateCode: null,
+    const checkPermission = (permission) => {
+    if (!user?.attributes) return false;
+    const permissions = user.attributes;
+    return Object.keys(permissions).includes(permission);
+  };
+
+    // All email templates as a list
+    const [templates, setTemplates] = useState([]);
+    useEffect(() => {
+        findAllNotificationTemplate()
+            .then((allTemplates) => {
+                setTemplates(allTemplates);
+            })
+            .catch((err) => {
+                console.log(`Error while fetching templates from service: ${err}`);
+            })
     });
 
-    // Search and Pagination States
+    // Filter all the templates when search is needed
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
-
-    // Filter templates based on Search Query
     const filteredTemplates = useMemo(() => {
         if (!searchQuery.trim()) return templates;
         const query = searchQuery.toLowerCase();
@@ -103,6 +108,20 @@ export const TableOfTemplatesTab = ({
         setSearchQuery('');
         setPage(0);
     };
+
+    
+    // Modal & State Management
+    const [templateCreate, setTemplateCreate] = useState(false);
+    const [templateToEdit, setTemplateToEdit] = useState(-1);
+    const [templateToView, setTemplateToView] = useState(-1);
+    const [editingTemplate, setEditingTemplate] = useState(null);
+
+    // Delete Confirmation State
+    const [deleteConfirmation, setDeleteConfirmation] = useState({
+        open: false,
+        templateCode: null,
+    });
+
 
     const handleCreateTemplate = (formData) => {
         if (templates.some((t) => t.templateCode === formData.templateCode)) {
@@ -201,82 +220,162 @@ export const TableOfTemplatesTab = ({
         <>
             {/* Header & Controls Area */}
             <Box
-                sx={{
-                    display: 'flex',
-                    flexDirection: isMobile ? 'column' : 'row',
-                    justifyContent: 'space-between',
-                    alignItems: isMobile ? 'stretch' : 'center',
-                    mb: 3,
-                    gap: 2,
-                }}
-            >
-                <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                    📧 Active Email Templates
-                </Typography>
+    sx={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        justifyContent: 'space-between',
+        alignItems: isMobile ? 'stretch' : 'center',
+        mb: 3.5,
+        pb: isMobile ? 0 : 1,
+        gap: 2.5,
+    }}
+>
+    {/* Left: Icon Badge + Title + Subtitle */}
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box
+            sx={{
+                width: { xs: 44, sm: 48 },
+                height: { xs: 44, sm: 48 },
+                borderRadius: '14px',
+                bgcolor: 'primary.50',
+                color: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid',
+                borderColor: 'primary.100',
+                boxShadow: '0 4px 12px rgba(25, 118, 210, 0.08)',
+                flexShrink: 0,
+            }}
+        >
+            <EmailRoundedIcon sx={{ fontSize: { xs: 22, sm: 26 } }} />
+        </Box>
 
-                <Box
+        <Box>
+            <Stack direction="row" alignItems="center" spacing={1.25} flexWrap="wrap">
+                <Typography
+                    variant="h5"
+                    component="h1"
                     sx={{
-                        display: 'flex',
-                        flexDirection: isMobile ? 'column' : 'row',
-                        gap: 1.5,
-                        alignItems: 'center',
-                        width: isMobile ? '100%' : 'auto',
+                        fontWeight: 800,
+                        color: 'text.primary',
+                        letterSpacing: '-0.02em',
+                        fontSize: { xs: '1.25rem', sm: '1.5rem' },
                     }}
                 >
-                    {/* Search Field */}
-                    <TextField
-                        size="small"
-                        placeholder="Search code or subject..."
-                        value={searchQuery}
-                        onChange={handleSearchChange}
-                        fullWidth={isMobile}
-                        sx={{
-                            minWidth: isMobile ? '100%' : 280,
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: '10px',
-                                backgroundColor: 'background.paper',
-                                transition: 'all 0.2s ease-in-out',
-                                '&:hover': {
-                                    borderColor: 'primary.main',
-                                },
-                            },
-                        }}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
-                                </InputAdornment>
-                            ),
-                            endAdornment: searchQuery && (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={handleClearSearch} edge="end">
-                                        <ClearIcon sx={{ fontSize: 18 }} />
-                                    </IconButton>
-                                </InputAdornment>
-                            ),
-                        }}
-                    />
+                    Active Email Templates
+                </Typography>
 
-                    {checkPermission(NOTIFICATION_TEMPLATE_CREATE_PERMISSION) && (
-                        <Button
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={openCreateTemplateModal}
-                            fullWidth={isMobile}
-                            sx={{
-                                borderRadius: '10px',
-                                textTransform: 'none',
-                                fontWeight: 600,
-                                px: 2.5,
-                                py: 0.9,
-                                boxShadow: '0 4px 12px rgba(25, 118, 210, 0.2)',
-                            }}
-                        >
-                            Create Template
-                        </Button>
-                    )}
-                </Box>
-            </Box>
+                <Chip
+                    label="Live"
+                    size="small"
+                    sx={{
+                        height: 20,
+                        fontSize: '0.6875rem',
+                        fontWeight: 700,
+                        bgcolor: 'success.50',
+                        color: 'success.dark',
+                        border: '1px solid',
+                        borderColor: 'success.200',
+                        '& .MuiChip-label': { px: 1 },
+                    }}
+                />
+            </Stack>
+
+            <Typography
+                variant="body2"
+                sx={{
+                    color: 'text.secondary',
+                    fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                    fontWeight: 400,
+                    mt: 0.25,
+                }}
+            >
+                Search, inspect, and update system notification templates.
+            </Typography>
+        </Box>
+    </Box>
+
+    {/* Right: Search Input + Action Button */}
+    <Box
+        sx={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: 1.5,
+            alignItems: 'center',
+            width: isMobile ? '100%' : 'auto',
+        }}
+    >
+        {/* Search Field */}
+        <TextField
+            size="small"
+            placeholder="Search code or subject..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            fullWidth={isMobile}
+            sx={{
+                minWidth: isMobile ? '100%' : 290,
+                '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    backgroundColor: 'background.paper',
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)',
+                    transition: 'all 0.2s ease-in-out',
+                    '& fieldset': {
+                        borderColor: 'divider',
+                    },
+                    '&:hover fieldset': {
+                        borderColor: 'primary.main',
+                    },
+                    '&.Mui-focused': {
+                        boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.12)',
+                    },
+                },
+            }}
+            InputProps={{
+                startAdornment: (
+                    <InputAdornment position="start">
+                        <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                    </InputAdornment>
+                ),
+                endAdornment: searchQuery && (
+                    <InputAdornment position="end">
+                        <IconButton size="small" onClick={handleClearSearch} edge="end">
+                            <ClearIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                    </InputAdornment>
+                ),
+            }}
+        />
+
+        {/* Create Button */}
+        {checkPermission(NOTIFICATION_TEMPLATE_CREATE_PERMISSION) && (
+            <Button
+                variant="contained"
+                startIcon={<AddRoundedIcon />}
+                onClick={openCreateTemplateModal}
+                fullWidth={isMobile}
+                sx={{
+                    borderRadius: '12px',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    px: 2.5,
+                    py: 1,
+                    whiteSpace: 'nowrap',
+                    background: (theme) =>
+                        `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                    boxShadow: '0 4px 14px rgba(25, 118, 210, 0.25)',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 6px 18px rgba(25, 118, 210, 0.35)',
+                    },
+                }}
+            >
+                Create Template
+            </Button>
+        )}
+    </Box>
+</Box>
 
             {templates.length === 0 ? (
                 <Card
